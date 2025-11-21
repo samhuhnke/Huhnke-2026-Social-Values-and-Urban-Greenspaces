@@ -14,7 +14,7 @@
 rm(list = ls(globalenv()))
 
 # Set working directory to whatever needed
-setwd("C:/Users/samhu/Desktop/HY/AAAA Master Thesis/DATA/ZONAL STATISTICS")
+setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/DATA/ZONAL STATISTICS")
 
 # Load necessary packages
 library(tidyverse)
