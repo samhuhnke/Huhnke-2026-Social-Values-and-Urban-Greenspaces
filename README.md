@@ -2,7 +2,7 @@
 
 This work was produced has part of a Master's Thesis at the University of Helsinki. 
 **Student**: Sam Huhnke. 
-**Supervisors**: 1. Prof. Dr. Christopher Raymond, 
+**Supervisors**: 1. Prof. Christopher Raymond, 
                  2. Dr. Oriol Antunez Garcia, 
                  3. Dr. Jussi Lampinnen.
 
