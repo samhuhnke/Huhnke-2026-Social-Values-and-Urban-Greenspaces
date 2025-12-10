@@ -17,20 +17,18 @@
 # 0) Set working directory + clear environment (if needed)
 # ============================================
 
-# Set working directory to whatever needed
-setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/DATA/PPGIS Data")
-
 # Clear environment
 rm(list = ls(globalenv()))
 
+# Set working directory to whatever needed
+setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/DATA/PPGIS Data")
 
 # ============================================
 # 1) Load necessary packages
 # ============================================
 
 library(tidyverse)
-library(sf) 
-library(ggplot2)
+library(purrr) # for 5.2)
 
 # ============================================
 # 2) Load data
@@ -48,9 +46,7 @@ colnames(CPH_raw)
 # ============================================
 
 # 3.1) Remove all rows that contain NAs for the social values column (= 'SV_type')
-HEL_no_NA <- HEL_raw |> 
-  filter(!is.na(SV_type))
-
+HEL_no_NA <- HEL_raw |> filter(!is.na(SV_type))
 
 # 3.2) Reshape Create CPH_SV data to resemble HEL_SV format: from current wide format to long format
 {
@@ -152,7 +148,6 @@ HEL_no_NA <- HEL_raw |>
 }
 
 
-
 # ============================================
 # 4) Data Harmonization
 # ============================================
@@ -161,62 +156,56 @@ HEL_no_NA <- HEL_raw |>
 # 4.1) Helsinki
 # -------------------------------------
 
-# 4.1a) Reclassify HEL_no_NA social values into new categories
-# NOTE: see reclassification table
-HEL_SV_reclassified <- HEL_no_NA |> 
-  mutate(SV_new = as.factor(case_when(SV_type == 0 ~ 1,
-                                      SV_type == 1 ~ 2,
-                                      SV_type == 3 ~ 3,
-                                      SV_type == 4 | SV_type == 5 | SV_type == 6 ~ 4,
-                                      SV_type == 7 ~ 5,
-                                      SV_type == 8 | SV_type == 12 ~ 6,
-                                      SV_type == 10 ~ 7,
-                                      SV_type == 11 ~ 8,
-                                      T ~ NA))) # set all other not reclassified categories to NA
-
-# 4.1b) remove NAs and unneeded (old) columns
-HEL_SV_reclassified_final <- HEL_SV_reclassified |> 
-  select(-SV_type) |>    # remove old classification column
-  filter(!is.na(SV_new)) # remove unused categories
-
-# 4.1c) control entries for each new class and remaining total entries
-HEL_SV_reclassified_final |> group_by(SV_new) |> count()
-HEL_SV_reclassified_final |> nrow()
-
-# 4.1d) remove temporary not needed data sets
-rm("HEL_SV_reclassified")  
+{
+  # 4.1a) Reclassify HEL_no_NA social values into new categories
+  # NOTE: see reclassification table
+  HEL_SV_reclassified <- HEL_no_NA |> 
+    mutate(SV_new = as.factor(case_when(SV_type == 0 ~ 1,
+                                        SV_type == 1 ~ 2,
+                                        SV_type == 3 ~ 3,
+                                        SV_type == 4 | SV_type == 5 | SV_type == 6 ~ 4,
+                                        SV_type == 7 ~ 5,
+                                        SV_type == 8 | SV_type == 12 ~ 6,
+                                        SV_type == 10 ~ 7,
+                                        SV_type == 11 ~ 8,
+                                        T ~ NA))) # set all other not reclassified categories to NA
+  
+  # 4.1b) remove NAs and unneeded (old) columns
+  HEL_SV_reclassified_final <- HEL_SV_reclassified |> 
+    select(-SV_type) |>    # remove old classification column
+    filter(!is.na(SV_new)) # remove unused categories
+  
+  # 4.1c) remove temporary not needed data sets
+  rm("HEL_SV_reclassified")  
+}
 
 
 # -------------------------------------
 # 4.2) Copenhagen
 # -------------------------------------
 
-# 4.2a) Reclassify HEL_no_NA social values into new categories
-# NOTE: see reclassification table
-CPH_SV_reclassified <- CPH_SV_long |> 
-  mutate(SV_new = as.factor(case_when(SV_ID == 1 | SV_ID == 2 ~ 1, 
-                                      SV_ID == 3 | SV_ID == 4 ~ 2,
-                                      SV_ID == 5 ~ 3,
-                                      SV_ID == 6 ~ 4,
-                                      SV_ID == 7 ~ 5,
-                                      SV_ID == 8 ~ 6,
-                                      SV_ID == 9 ~ 7,
-                                      SV_ID == 10 ~ 8,
-                                      T ~ NA))) # set all other not reclassified categories to NA
-
-# 4.2b) remove NAs and unneeded (old) columns
-CPH_SV_reclassified_final <- CPH_SV_reclassified |> 
-  select(-c("SV_type", "SV_presence", "SV_ID", "SoVal_other_open_P", "SoVal_other_open")) |> # remove old classification
-  filter(!is.na(SV_new)) # remove unused categories
-
-# 4.2c) control entries for each new class and remaining total entries
-CPH_SV_reclassified_final |> group_by(SV_new) |> count()
-CPH_SV_reclassified_final |> nrow() 
-
-# 4.2d) remove temporary not needed data sets
-rm(list = "CPH_SV_reclassified")
+{
+  # 4.2a) Reclassify HEL_no_NA social values into new categories
+  # NOTE: see reclassification table
+  CPH_SV_reclassified <- CPH_SV_long |> 
+    mutate(SV_new = as.factor(case_when(SV_ID == 1 | SV_ID == 2 ~ 1, 
+                                        SV_ID == 3 | SV_ID == 4 ~ 2,
+                                        SV_ID == 5 ~ 3,
+                                        SV_ID == 6 ~ 4,
+                                        SV_ID == 7 ~ 5,
+                                        SV_ID == 8 ~ 6,
+                                        SV_ID == 9 ~ 7,
+                                        SV_ID == 10 ~ 8,
+                                        T ~ NA))) # set all other not reclassified categories to NA
   
-
+  # 4.2b) remove NAs and unneeded (old) columns
+  CPH_SV_reclassified_final <- CPH_SV_reclassified |> 
+    select(-c("SV_type", "SV_presence", "SV_ID", "SoVal_other_open_P", "SoVal_other_open")) |> # remove old classification
+    filter(!is.na(SV_new)) # remove unused categories
+  
+  # 4.2c) remove temporary not needed data sets
+  rm(list = "CPH_SV_reclassified")
+}
 
 
 # ============================================
@@ -290,40 +279,42 @@ rm(list = "CPH_SV_reclassified")
   summary_table
 }
 
-# 5.2) Individual social value metrics 
-# NOTE: before and after reclassification
-## Number of entries for each social value category BEFORE RECLASSIFICATION
+# 5.2) Counts for each individual social value
 {
-  # create temporary Helsinki SV count data set
-  HEL_SV_n <- HEL_no_NA |> 
-    group_by(SV_type) |> 
-    count() |> 
-    rename(SV_ID = SV_type) # rename Sv column to enable full_join() 
+  # helsinki old classification
+  HEL_SV_old <- HEL_no_NA |> group_by(SV_type) |> count() |> rename(SV_ID = SV_type) # rename Sv column to enable full_join() 
   
-  # create temporary Copenhagen SV count data set
-  CPH_SV_n <- CPH_SV_long |> 
-    group_by(SV_ID) |> 
-    count()
+  # helsinki new classification
+  HEL_SV_new <- HEL_SV_reclassified_final |> mutate(SV_new = as.numeric(SV_new)) |> group_by(SV_new) |> count() |> rename(SV_ID = SV_new) # rename SV column to enable full_join() 
   
-  #combine into new table with both counts
-  combined_SV <- full_join(
-    HEL_SV_n |> rename(Helsinki = n),
-    CPH_SV_n |> rename(Copenhagen = n),
-    by = "SV_ID"
-  ) |> 
+  # copenhagen old classification
+  CPH_SV_old <- CPH_SV_long |> group_by(SV_ID) |> count()
+  
+  # copenhagen new classification
+  CPH_SV_new <- CPH_SV_reclassified_final |> mutate(SV_new = as.numeric(SV_new)) |> group_by(SV_new) |> count() |> rename(SV_ID = SV_new) # rename SV column
+
+  # Create a list of each individual df
+  dfs <- list(
+    HEL_SV_old |> rename(HEL_old = n),
+    HEL_SV_new |> rename(HEL_new = n),
+    CPH_SV_old |> rename(CPH_old = n),
+    CPH_SV_new |> rename(CPH_new = n)
+  )
+
+  # combine dfs into one df
+  SV_counts <- reduce(dfs, full_join, by = "SV_ID") |>
     arrange(SV_ID)
   
-  combined_SV
-  
   # remove temporary data sets
-  rm(list = c("HEL_SV_n", "CPH_SV_n"))
+  rm(list = c("HEL_SV_old", "HEL_SV_new", "CPH_SV_old", "CPH_SV_new", "dfs"))
+  
+  # view
+  SV_counts
 }
 
 
-
-
 # ============================================
-# 6) Save harmonized data
+# 6) Save harmonized data as .csv files
 # ============================================
 
 # 6.1) Helsinki
