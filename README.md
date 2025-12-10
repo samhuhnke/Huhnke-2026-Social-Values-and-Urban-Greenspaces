@@ -24,3 +24,20 @@ The urban canopy cover data can be downloaded from: INSERT LINK
 Each code has a number assigned to it. This number indicates the order in which the codes are designed to run. It is important to note that each individual code leads to outputs necessary for the next code. Hence it is important to run each code in sequence and to properly store and access each created data subset.
 
 If you have any questions about using the code, feel free to contact me. Please note, that I myself am **NOT ENTITLED** to provide access to the PPGIS data.
+
+### MT_01_Data_Harmonization_Code
+
+This code is intended to harmonize the PPGIS data from Helsinki and Copenhagen. The original social values (13 for Helsinki, 17 for Copenhagen) are hereby reclassified into **8 new** (oftentimes broader) social value categories. Categories that could not sensibly be reclassified were omitted from the 8 new social value categories.
+
+The result of this code are two reclassified .csv-files! 
+
+### QGIS Analysis
+
+Between MT_01 and MT_02 the data is processed in QGIS. The steps taken are:
+1) Cropping of the data to the administrative boundaries for both Copenhagen and Helsinki (the crop entails a buffer of around 100m)
+2) Cropping of the data to the land area (as this analysis is interested in the effect of canopy cover)
+3) The creation of buffers around each pin. These buffer areas are used as a unit of analysis.
+
+### MT_02_Zonal_Statistics_Code
+
+This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
