@@ -31,12 +31,22 @@ This code is intended to harmonize the PPGIS data from Helsinki and Copenhagen. 
 
 The result of this code are two reclassified .csv-files! 
 
-### QGIS Analysis
+### QGIS Analysis - WIP
 
 Between MT_01 and MT_02 the data is processed in QGIS. The steps taken are:
-1) Cropping of the data to the administrative boundaries for both Copenhagen and Helsinki (the crop entails a buffer of around 100m)
-2) Cropping of the data to the land area (as this analysis is interested in the effect of canopy cover)
-3) The creation of buffers around each pin. These buffer areas are used as a unit of analysis.
+1) Establishing of the administrative land area for both Copenhagen and Helsinki
+2) Adding a 100m buffer zone for both (to account for PPGIS mapping imprecision and the impact of features just outside the administrative borders)
+3) Cropping of the data to the buffered administrative land area for both Copenhagen and Helsinki 
+4) The creation of buffers around each pin. These buffer areas are used as a unit of analysis
+5) Zonal statistics for each buffered pin
+
+
+#### Each individual step in QGIS - WIP
+
+**Helsinki:** 
+
+
+**Copenhagen:**
 
 ### MT_02_Zonal_Statistics_Code
 
