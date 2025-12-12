@@ -21,7 +21,7 @@
 rm(list = ls(globalenv()))
 
 # Set working directory to whatever needed
-setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/DATA/PPGIS Data")
+setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data/PPGIS Data")
 
 # ============================================
 # 1) Load necessary packages

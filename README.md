@@ -31,23 +31,23 @@ This code is intended to harmonize the PPGIS data from Helsinki and Copenhagen. 
 
 The result of this code are two reclassified .csv-files! 
 
-### QGIS Analysis - WIP
 
-Between MT_01 and MT_02 the data is processed in QGIS. The steps taken are:
-1) Establishing of the administrative land area for both Copenhagen and Helsinki
-2) Adding a 100m buffer zone for both (to account for PPGIS mapping imprecision and the impact of features just outside the administrative borders)
-3) Cropping of the data to the buffered administrative land area for both Copenhagen and Helsinki 
-4) The creation of buffers around each pin. These buffer areas are used as a unit of analysis
-5) Zonal statistics for each buffered pin
+### MT_02_QGIS - WIP
 
+#### Helsinki:
+1. Gathering of CLM canopy cover data for Helsinki and NLS administrative boundaries and water bodies data
+2. Extension of NLS water bodies data to cover the entire water area included in the Helsinki administrative boundaries.
+3. Combine NLS water bodies with extension of water bodies and dissolve both to create one single water bodies element.
+4. Subtract the water area from the administrative boundaries to only retain mainland administrative boundaries.
+5. Visually identify any islands within the administrative boundaries of Helsinki that were lost during step 4. 
+6. Combine mainland administrative boundaries with the identified islands to establish the entire land administrative boundaries
+7. Buffer administrative boundaries with 100m buffer to account for imprecision in PPGIS mapping
+8. Clip PPGIS data to the extent of the 100m-buffered administrative boundaries.
+9. Buffer administrative boundaries with 200m buffer to account for the influence of canopy cover just outside the 100m buffer-zone on points inside the 100m buffer-zone
+10. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries. 
 
-#### Each individual step in QGIS - WIP
+#### Copenhagen:
 
-**Helsinki:** 
-
-
-**Copenhagen:**
-
-### MT_02_Zonal_Statistics_Code
+### MT_03_Zonal_Statistics_Code
 
 This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
