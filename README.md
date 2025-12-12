@@ -34,7 +34,7 @@ The result of this code are two reclassified .csv-files!
 
 ### MT_02_QGIS - WIP
 
-#### Helsinki:
+#### Helsinki Pre-Processing
 1. Gathering of CLM canopy cover data for Helsinki and NLS administrative boundaries and water bodies data
 2. Extension of NLS water bodies data to cover the entire water area included in the Helsinki administrative boundaries.
 3. Combine NLS water bodies with extension of water bodies and dissolve both to create one single water bodies element.
@@ -44,9 +44,22 @@ The result of this code are two reclassified .csv-files!
 7. Buffer administrative boundaries with 100m buffer to account for imprecision in PPGIS mapping
 8. Clip PPGIS data to the extent of the 100m-buffered administrative boundaries.
 9. Buffer administrative boundaries with 200m buffer to account for the influence of canopy cover just outside the 100m buffer-zone on points inside the 100m buffer-zone
-10. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries. 
+10. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries (+for the 100m-buffered boundaries as a backup)
 
-#### Copenhagen:
+#### Helsinki Zonal Statistics - WIP
+1. WIP
+
+#### Copenhagen Pre-Processing
+1. Gathering of CLM canopy cover data for Copenhagen and DigDag administrative boundaries
+2. Extract Copenhagen and Fredriksberg administrative boundaries from DigDag data (Fredriksberg was included as it is surrounded by the Copenhagen municipality)
+3. Dissolve Copenhagen and Fredriksberg administrative boundaries into one element
+4. Buffer administrative boundaries with 100m buffer to account for imprecision in PPGIS mapping
+5. Clip PPGIS data to the extent of the 100m-buffered administrative boundaries
+6. Buffer administrative boundaries with 200m buffer to account for the influence of canopy cover just outside the 100m buffer-zone on points inside the 100m buffer-zone
+7. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries (+for the the 100m-buffered boundaries as a backup)
+
+#### Copenhagen Zonal Statistics - WIP
+1. WIP
 
 ### MT_03_Zonal_Statistics_Code
 
