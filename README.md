@@ -48,6 +48,15 @@ The result of this code are two reclassified .csv-files!
 9. Buffer administrative boundaries with 200m buffer to account for the influence of canopy cover just outside the 100m buffer-zone on points inside the 100m buffer-zone
 10. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries (+for the 100m-buffered boundaries as a backup)
 
+
+#### Helsinki Land Cover Data
+To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
+
+1. Download data and add to the QGIS
+2. Clip by 200m-buffered administrative boundary
+3. WIP - something with adding to the PPGIS.csv file or however I'm going to analyse this data
+
+
 #### Helsinki Zonal Statistics - WIP
 1. WIP
 
@@ -59,6 +68,13 @@ The result of this code are two reclassified .csv-files!
 5. Clip PPGIS data to the extent of the 100m-buffered administrative boundaries
 6. Buffer administrative boundaries with 200m buffer to account for the influence of canopy cover just outside the 100m buffer-zone on points inside the 100m buffer-zone
 7. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries (+for the the 100m-buffered boundaries as a backup)
+
+#### Copenhagen Land Cover Data
+To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
+
+1. Download data and add to the QGIS
+2. Clip by 200m-buffered administrative boundary
+3. WIP - something with adding to the PPGIS.csv file or however I'm going to analyse this data
 
 #### Copenhagen Zonal Statistics - WIP
 1. WIP
