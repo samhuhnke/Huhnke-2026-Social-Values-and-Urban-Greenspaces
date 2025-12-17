@@ -16,7 +16,9 @@ This repository contains the code used for the analysis of relations between soc
 
 The PPGIS social value data is not publically available and can only be accessed after prior agreement with the *Co-Carbon project*, the *University of Copenhagen*, and the *University of Helsinki* (or official and entitled representatives of each entity). 
 
-The urban canopy cover data can be downloaded from: INSERT LINK
+The urban canopy cover data can be downloaded from: https://wekeo.copernicus.eu/ 
+
+Instructions on how to download data: https://help.wekeo.eu/en/articles/6416936-how-to-download-wekeo-data 
 
 
 ## INSTRUCTION TO USE THE CODES
