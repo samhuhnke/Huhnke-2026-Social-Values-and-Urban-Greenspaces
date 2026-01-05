@@ -53,8 +53,8 @@ The result of this code are two reclassified .csv-files!
 To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
 
 1. Download data and add to the QGIS
-2. Clip by 200m-buffered administrative boundary
-3. WIP - something with adding to the PPGIS.csv file or however I'm going to analyse this data
+2. Clip Urban Atlas landcover data to the extent of the 200m-buffered administrative boundary
+3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
 
 
 #### Helsinki Zonal Statistics - WIP
@@ -73,8 +73,8 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
 
 1. Download data and add to the QGIS
-2. Clip by 200m-buffered administrative boundary
-3. WIP - something with adding to the PPGIS.csv file or however I'm going to analyse this data
+2. Clip Urban Atlas Land Cover data to the extent of the 200m-buffered administrative boundary
+3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
 
 #### Copenhagen Zonal Statistics - WIP
 1. WIP
