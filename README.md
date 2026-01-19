@@ -20,6 +20,8 @@ The urban canopy cover data can be downloaded from: https://wekeo.copernicus.eu/
 
 Instructions on how to download data: https://help.wekeo.eu/en/articles/6416936-how-to-download-wekeo-data 
 
+The Urban Atlas 2018 was used to identify different land-uses for both Copenhagen and Helsinki. The data and descriptions can be found under: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018 
+
 
 ## INSTRUCTION TO USE THE CODES
 
@@ -79,6 +81,17 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 #### Copenhagen Zonal Statistics - WIP
 1. WIP
 
-### MT_03_Zonal_Statistics_Code
+### MT_03_General_Area_Metrics
+
+This code is intended to describe the land-uses for both Copenhagen and Helsinki as defined by the CLMS Urban Atlas 2018. This is done to enable later interpretation of the results as the prevalence of different land uses enables different uses by citizens. 
+
+Steps taken:
+1. Establish area for all land-use categories in QGIS using the *Open field calculator* and the command *$area*. This creates area estimates in m2 for each land-use polygon.
+2. Export the data as a .csv-file. 
+
+IMPORTANT: Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies (AT LEAST AS OF RIGHT NOW: 19.01.2026)
+
+
+### MT_04_Zonal_Statistics_Code
 
 This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
