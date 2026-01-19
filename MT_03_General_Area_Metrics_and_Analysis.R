@@ -23,7 +23,7 @@ rm(list = ls(globalenv()))
 setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data/CSVs")
 
 # ============================================
-# 1) Load necessary packages
+# 1) Load necessary packagess
 # ============================================
 
 library(tidyverse)
@@ -33,21 +33,41 @@ library(tidyverse)
 # ============================================
 
 HEL_LU <- read.csv("Helsinki_Urban Atlas 2018.csv", sep = ",")  # Helsinki Urban Atlas 2018 data
-CPH_LU <- read.csv("Copenhagen_Urban Atlas 2018_area.csv", sep = ",") # Copenhagen Urban Atlas 2018 data
+CPH_LU <- read.csv("Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhagen Urban Atlas 2018 data
 
 
 # ============================================
 # 3) Data Wrangling
 # ============================================
 
-# copenhagen
-CPH_LU_grouped_v2 <- CPH_LU_v2 |> 
-  group_by(code_2018) |> 
-  reframe(area_m2 = sum(area_m2),
-          area_km2 = area_m2/1000000) |> 
-  ungroup() |> 
-  reframe(code_2018 = code_2018,
-          area_m2 = area_m2,
-          area_km2 = area_km2,
-          total_km2 = sum(area_km2))
+# 3.1) Calculating Total Area
+# NOTE: Use the "area_m2"  column. This is the column calculated in QGIS. 
+{
+  # helsinki
+  HEL_LU_grouped <- HEL_LU |> 
+    group_by(code_2018) |> 
+    reframe(area_m2 = sum(area_m2),
+            area_km2 = area_m2/1000000) |> 
+    ungroup() |> 
+    reframe(code_2018 = code_2018,
+            area_m2 = area_m2,
+            area_km2 = area_km2,
+            total_km2 = sum(area_km2))
+  
+  # copenhagen
+  CPH_LU_grouped <- CPH_LU |> 
+    group_by(code_2018) |> 
+    reframe(area_m2 = sum(area_m2),
+            area_km2 = area_m2/1000000) |> 
+    ungroup() |> 
+    reframe(code_2018 = code_2018,
+            area_m2 = area_m2,
+            area_km2 = area_km2,
+            total_km2 = sum(area_km2))
+}
+
+# 3.2) Reclassify into broader categories
+
+## NOTE: See reclassification tables
+
 
