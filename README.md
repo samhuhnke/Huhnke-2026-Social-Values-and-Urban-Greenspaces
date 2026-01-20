@@ -85,11 +85,16 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 
 This code is intended to describe the land-uses for both Copenhagen and Helsinki as defined by the CLMS Urban Atlas 2018. This is done to enable later interpretation of the results as the prevalence of different land uses enables different uses by citizens. 
 
-Steps taken:
+Steps taken in QGIS:
 1. Establish area for all land-use categories in QGIS using the *Open field calculator* and the command *$area*. This creates area estimates in m2 for each land-use polygon.
 2. Export the data as a .csv-file. 
 
 IMPORTANT: Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies (AT LEAST AS OF RIGHT NOW: 19.01.2026)
+
+Steps in R-Code:
+1. Create reclassification tables --> new classification based on overarching categories of the Urban Atlas 2018
+2. Calculate total area per overarching category
+3. Create dataset that contains code_2018, category_2018, and area values
 
 
 ### MT_04_Zonal_Statistics_Code
