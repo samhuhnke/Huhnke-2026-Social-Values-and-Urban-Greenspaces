@@ -29,12 +29,17 @@ Each code has a number assigned to it. This number indicates the order in which 
 
 If you have any questions about using the code, feel free to contact me. Please note, that I myself am **NOT ENTITLED** to provide access to the PPGIS data.
 
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
+
 ### MT_01_Data_Harmonization_Code
 
 This code is intended to harmonize the PPGIS data from Helsinki and Copenhagen. The original social values (13 for Helsinki, 17 for Copenhagen) are hereby reclassified into **8 new** (oftentimes broader) social value categories. Categories that could not sensibly be reclassified were omitted from the 8 new social value categories.
 
 The result of this code are two reclassified .csv-files! 
 
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
 
 ### MT_02_QGIS - WIP
 
@@ -50,14 +55,12 @@ The result of this code are two reclassified .csv-files!
 9. Buffer administrative boundaries with 200m buffer to account for the influence of canopy cover just outside the 100m buffer-zone on points inside the 100m buffer-zone
 10. Clip CLM canopy cover data to the extent of the 200m-buffered administrative boundaries (+for the 100m-buffered boundaries as a backup)
 
-
 #### Helsinki Land Cover Data
 To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
 
 1. Download data and add to the QGIS
 2. Clip Urban Atlas landcover data to the extent of the 200m-buffered administrative boundary
 3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
-
 
 #### Helsinki Zonal Statistics
 1. Establish 50m radial buffer zone around each point of the PPGIS (*Vector Geometry --> Buffer* + *Segments = 10*)
@@ -88,8 +91,8 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 3. Export as .csv-file
 
 
-
-=================================================================================================
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
 
 ### MT_03_General_Area_Metrics
 
@@ -106,6 +109,8 @@ Steps in R-Code:
 2. Calculate total area per overarching category
 3. Create dataset that contains code_2018, category_2018, and area values
 
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
 
 ### MT_04_Zonal_Statistics_Code
 
