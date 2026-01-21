@@ -92,7 +92,7 @@ Steps taken in QGIS:
 IMPORTANT: Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies (AT LEAST AS OF RIGHT NOW: 19.01.2026)
 
 Steps in R-Code:
-1. Create reclassification tables --> new classification based on overarching categories of the Urban Atlas 2018
+1. Create reclassification tables --> new classification based on overarching categories of the Urban Atlas 2018 + additional 9th category for natural open spaces without vegetation!
 2. Calculate total area per overarching category
 3. Create dataset that contains code_2018, category_2018, and area values
 
