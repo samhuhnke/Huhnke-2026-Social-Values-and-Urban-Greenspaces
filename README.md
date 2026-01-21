@@ -6,7 +6,6 @@ This work was produced has part of a Master's Thesis at the University of Helsin
                  2. Dr. Oriol Antunez Garcia, 
                  3. Dr. Jussi Lampinnen.
 
-
 ## CONTENT
 
 This repository contains the code used for the analysis of relations between social values and urban canopy cover. The social value data was established through a PPGIS survey as part of the *Co-Carbon project*. The specific data contains information on Copenhagen, DK, and Helsinki, FI. The urban canopy cover data is publically available data from the *Copernicus Landuse Monitoring*. 
@@ -112,6 +111,6 @@ Steps in R-Code:
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
 
-### MT_04_Zonal_Statistics_Code
+### MT_04_Data_Analysis
 
 This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
