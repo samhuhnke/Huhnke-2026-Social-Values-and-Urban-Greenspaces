@@ -49,17 +49,59 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
 # ============================================
 
 # Helsinki
-HEL <- HEL_raw |> 
-  left_join(HEL_areas, by = "code_2018") |> 
-  select(Respondent, category_2018, code_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
-  rename(CanopyCover_mean = X_mean)
+{
+  HEL <- HEL_raw |> 
+    # add area data
+    left_join(HEL_areas, by = "code_2018") |> 
+    # select relevant variables
+    select(Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    # rename canopy cover variable 
+    rename(CanopyCover_mean = X_mean) |> 
+    # further simplify classes into Greenspace, Forest, and Other
+    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
+                                 category_2018 == 6 ~ "Forest",
+                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
+  
+  # calculate area per type
+  HEL_type_area <- HEL |> 
+    select(type_2018, area_km2) |> 
+    group_by(type_2018) |> 
+    unique() |> 
+    reframe(type_area_km2 = sum(area_km2, na.rm = T))
+  
+  # join type area into complete data set
+  HEL <- HEL |> 
+    left_join(HEL_type_area, by = "type_2018")
+}
 
+# Copenhagen
+{
+  CPH <- CPH_raw |> 
+    # add area data
+    left_join(CPH_areas, by = "code_2018") |> 
+    # select relevant variables
+    select(Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    # rename canopy cover variable 
+    rename(CanopyCover_mean = X_mean) |> 
+    # further simplify classes into Greenspace, Forest, and Other
+    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
+                                 category_2018 == 6 ~ "Forest",
+                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
+  
+  # calculate area per type
+  CPH_type_area <- CPH |> 
+    select(type_2018, area_km2) |> 
+    group_by(type_2018) |> 
+    unique() |> 
+    reframe(type_area_km2 = sum(area_km2, na.rm = T))
+  
+  # join type area into complete data set
+  CPH <- CPH |> 
+    left_join(CPH_type_area, by = "type_2018")
+}
 
-# Helsinki
-CPH <- CPH_raw |> 
-  left_join(CPH_areas, by = "code_2018") |> 
-  select(Respondent, category_2018, code_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
-  rename(CanopyCover_mean = X_mean)
+# remove temporary layers
+rm("CPH_type_area", "HEL_type_area")
 
 
 # ============================================
@@ -69,7 +111,9 @@ CPH <- CPH_raw |>
 # Plotting preperations
 {
   # define colors
-  cols <- c("#bf0000", "#959595", "#734d37", "#8cdc00", "#ffffa8", "#008c00", "#a6a6ff", "#80f2e6","#ccffcc")
+  category_cols <- c("#bf0000", "#959595", "#734d37", "#8cdc00", "#ffffa8", "#008c00", "#a6a6ff", "#80f2e6","#ccffcc")
+  
+  type_cols <- c("#008c00", "#8cdc00", "#959595" )
   
   # define labels
   lu_labels <- c(
@@ -91,26 +135,42 @@ CPH <- CPH_raw |>
 HEL |> ggplot(aes(x = CanopyCover_mean)) +
   geom_histogram()
 
-CPH |> ggplot(aes(x = CanopyCover_mean)) +s
+CPH |> ggplot(aes(x = CanopyCover_mean)) +
   geom_histogram()
 
 
 # How is canopy cover distributed by land-use type?
 
-ggplot(HEL, aes(x = CanopyCover_mean, fill = as.factor(category_2018))) +
+## Helsinki all
+ggplot(HEL, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
   geom_histogram(
     position = "identity",
     alpha = 0.7,
     bins = 30
   ) +
-  scale_fill_manual(values = cols)
+  scale_fill_manual(values = type_cols) +
+  facet_wrap(~ type_2018)
 
-ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(category_2018))) +
+## Copenhagen all
+ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
   geom_histogram(
     position = "identity",
     alpha = 0.7,
     bins = 30
   ) +
-  scale_fill_manual(values = cols)
+  scale_fill_manual(values = type_cols) +
+  facet_wrap(~ type_2018)
 
-HEL_raw |> filter(is.na(code_2018)) |> count()
+
+# Point count & point desity per type
+HEL |> group_by(type_2018) |> count() |> 
+  left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+  mutate(point_density_km2 = n/type_area_km2)
+
+CPH |> group_by(type_2018) |> count() |> 
+  left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+  mutate(point_density_km2 = n/type_area_km2)
+  
+
+
+
