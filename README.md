@@ -59,8 +59,12 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
 
 
-#### Helsinki Zonal Statistics - WIP
-1. WIP
+#### Helsinki Zonal Statistics
+1. Establish 50m radial buffer zone around each point of the PPGIS (*Vector Geometry --> Buffer* + *Segments = 10*)
+2. Calculate mean canopy cover based on 200m-buffered canopy cover (*Raster analysis --> Zonal Statistics*)
+3. Export as .csv-file
+
+-----------------------------------------------------------------------------------------------------
 
 #### Copenhagen Pre-Processing
 1. Gathering of CLM canopy cover data for Copenhagen and DigDag administrative boundaries
@@ -79,7 +83,13 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
 
 #### Copenhagen Zonal Statistics - WIP
-1. WIP
+1. Establish 50m radial buffer zone around each point of the PPGIS (*Vector Geometry --> Buffer* + *Segments = 10*)
+2. Calculate mean canopy cover based on 200m-buffered canopy cover (*Raster analysis --> Zonal Statistics*)
+3. Export as .csv-file
+
+
+
+=================================================================================================
 
 ### MT_03_General_Area_Metrics
 
