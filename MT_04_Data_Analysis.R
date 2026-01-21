@@ -105,17 +105,25 @@ rm("CPH_type_area", "HEL_type_area")
 
 
 # ============================================
-# 4) Data Analysis
+# 4) Analysis Preparation
 # ============================================
 
-# Plotting preperations
+# Colors
 {
-  # define colors
+  # Land Use category colors
   category_cols <- c("#bf0000", "#959595", "#734d37", "#8cdc00", "#ffffa8", "#008c00", "#a6a6ff", "#80f2e6","#ccffcc")
   
+  # Land Use type colors
   type_cols <- c("#008c00", "#8cdc00", "#959595" )
   
-  # define labels
+  # Social Value colors
+  sv_cols <- c("#d45680", "#4d9955", "#a0afa0", "#009acb", "#006695", "#e69c24", "#ffeccc", "#8b7356")
+  
+}
+
+# Labels
+{
+  # Land Use categories
   lu_labels <- c(
     "1" = "1: Urban fabric",
     "2" = "2: Industrial, commercial, transport",
@@ -127,11 +135,37 @@ rm("CPH_type_area", "HEL_type_area")
     "8" = "8: Waterbodies",
     "9" = "9: Natural open spaces"
   )
+  
+  # Social values
+  sv_labels <- c(
+    "1" = "1: Relaxation",
+    "2" = "2: Natural Values",
+    "3" = "3: Aesthetics",
+    "4" = "4: Physical Well-Being and Outdoor Activity",
+    "5" = "5: Social Interaction",
+    "6" = "6: Heritage and Community Values",
+    "7" = "7: Spiritual Values",
+    "8" = "8: Personal Identity"
+  )
 }
+
+# ============================================
+# 5) General data analysis
+# ============================================
+
+# Metrics
+
+# Point count & point density per type (i.e. forest, greenspace, other) 
+HEL |> group_by(type_2018) |> count() |> 
+  left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+  mutate(point_density_km2 = n/type_area_km2)
+
+CPH |> group_by(type_2018) |> count() |> 
+  left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+  mutate(point_density_km2 = n/type_area_km2)
 
 
 # How is canopy cover distributed overall? 
-
 HEL |> ggplot(aes(x = CanopyCover_mean)) +
   geom_histogram()
 
@@ -140,7 +174,6 @@ CPH |> ggplot(aes(x = CanopyCover_mean)) +
 
 
 # How is canopy cover distributed by land-use type?
-
 ## Helsinki all
 ggplot(HEL, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
   geom_histogram(
@@ -162,15 +195,132 @@ ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
   facet_wrap(~ type_2018)
 
 
-# Point count & point desity per type
-HEL |> group_by(type_2018) |> count() |> 
-  left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
-  mutate(point_density_km2 = n/type_area_km2)
 
-CPH |> group_by(type_2018) |> count() |> 
-  left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
-  mutate(point_density_km2 = n/type_area_km2)
+# ============================================
+# 6) Social value data analysis
+# ============================================
+
+# Histograms by type 
+{
+  # Helsinki
+  HEL |> filter(type_2018 == "Forest") |> 
+    ggplot(aes(x = CanopyCover_mean, fill = as.factor(SV_new))) + 
+    geom_histogram(bins = 30) +
+    labs(title = "Helsinki Forest") +
+    scale_fill_manual(values = sv_cols,
+                      labels = sv_labels,
+                      name = "Social Values") +
+    facet_wrap(~ SV_new)
   
+  HEL |> filter(type_2018 == "Greenspace") |> 
+    ggplot(aes(x = CanopyCover_mean, fill = as.factor(SV_new))) + 
+    geom_histogram(bins = 30) +
+    labs(title = "Helsinki Greenspace") +
+    scale_fill_manual(values = sv_cols,
+                      labels = sv_labels,
+                      name = "Social Values") +
+    facet_wrap(~ SV_new)
+  
+  HEL |> filter(type_2018 == "Other") |> 
+    ggplot(aes(x = CanopyCover_mean, fill = as.factor(SV_new))) + 
+    geom_histogram(bins = 30) +
+    labs(title = "Helsinki Other") +
+    scale_fill_manual(values = sv_cols,
+                      labels = sv_labels,
+                      name = "Social Values") +
+    facet_wrap(~ SV_new)
+  
+  
+  # Copenhagen
+  CPH |> filter(type_2018 == "Forest") |> 
+    ggplot(aes(x = CanopyCover_mean, fill = as.factor(SV_new))) + 
+    geom_histogram(bins = 30) +
+    labs(title = "Copenhagen Forest") +
+    scale_fill_manual(values = sv_cols,
+                      labels = sv_labels,
+                      name = "Social Values") +
+    facet_wrap(~ SV_new)
+  
+  CPH |> filter(type_2018 == "Greenspace") |> 
+    ggplot(aes(x = CanopyCover_mean, fill = as.factor(SV_new))) + 
+    geom_histogram(bins = 30) +
+    labs(title = "Copenhagen Greenspace") +
+    scale_fill_manual(values = sv_cols,
+                      labels = sv_labels,
+                      name = "Social Values") +
+    facet_wrap(~ SV_new)
+  
+  CPH |> filter(type_2018 == "Other") |> 
+    ggplot(aes(x = CanopyCover_mean, fill = as.factor(SV_new))) + 
+    geom_histogram(bins = 30) +
+    labs(title = "Copenhagen Other") +
+    scale_fill_manual(values = sv_cols,
+                      labels = sv_labels,
+                      name = "Social Values") +
+    facet_wrap(~ SV_new)
+  
+}
+
+# Correlations between SV and canopy cover divided by type
+
+# Helsinki ---------------------------------
+# Approach 1: ANOVA
+# Question: Does canopy cover differ between different social values?
+{
+  # Turn SV_new into categorical value (or factor in R)
+  HEL$SV_new <- factor(HEL$SV_new)
+  
+  # ANOVA
+  anova_model <- aov(CanopyCover_mean ~ SV_new, data = HEL)
+  summary(anova_model)
+  
+  # Effect sizes
+  eta_sq <- 837424 / (837424 + 13019985)
+  eta_sq # Interpretation: about 6% of the variance in canopy cover is explained by social values
+  
+  # Follow-up Tukey test
+  TukeyHSD(anova_model)
+  
+  # Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = HEL,
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+}
+
+# Approach 2: Kruskal-Wallis
+# Question: Does canopy cover differ between different social values?
+{
+  # Boxplot
+  boxplot(CanopyCover_mean ~ SV_new, data = HEL,
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ SV_new, data = HEL)
+  
+  # Follow-up Wilcox
+  pairwise.wilcox.test(
+    HEL$CanopyCover_mean,
+    HEL$SV_new,
+    p.adjust.method = "BH")
+  
+}
+
+
+# Approach 3: Multinomial logistic regression
+library(nnet)
+
+LR_model <- multinom(SV_new ~ CanopyCover_mean, data = HEL)
+summary(LR_model)
+
+z <- summary(LR_model)$coefficients / summary(LR_model)$standard.errors
+p <- 2 * (1 - pnorm(abs(z)))
+p
+
+
+# Copenhagen ---------------------------------
 
 
 

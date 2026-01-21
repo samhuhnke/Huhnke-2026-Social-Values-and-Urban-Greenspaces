@@ -118,3 +118,5 @@ Steps in R-Code:
 ### MT_04_Data_Analysis
 
 This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
+
+Started analysis on social values and canopy cover
