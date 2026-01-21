@@ -20,7 +20,7 @@
 rm(list = ls(globalenv()))
 
 # Set working directory to whatever needed
-setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data/CSVs")
+setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 
 # ============================================
 # 1) Load necessary packagess
@@ -32,8 +32,8 @@ library(tidyverse)
 # 2) Load data
 # ============================================
 
-HEL_LU_raw <- read.csv("Helsinki_Urban Atlas 2018.csv", sep = ",")  # Helsinki Urban Atlas 2018 data
-CPH_LU_raw <- read.csv("Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhagen Urban Atlas 2018 data
+HEL_LU_raw <- read.csv("CSVs/Helsinki_Urban Atlas 2018.csv", sep = ",")  # Helsinki Urban Atlas 2018 data
+CPH_LU_raw <- read.csv("CSVs/Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhagen Urban Atlas 2018 data
 
 
 # ============================================
@@ -60,11 +60,13 @@ CPH_LU_raw <- read.csv("Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhage
       code_2018 == 21000 | code_2018 == 22000 | code_2018 == 23000 | code_2018 == 24000 |
         code_2018 == 25000 ~ 5,
       # Natural and semi-natural areas = 6
-      code_2018 == 31000 | code_2018 == 32000 | code_2018 == 33000 ~ 6,
+      code_2018 == 31000 | code_2018 == 32000 ~ 6,
       # Wetlands = 7
       code_2018 == 40000 ~ 7,
       # Water = 8
-      code_2018 == 50000 ~ 8 )) |> 
+      code_2018 == 50000 ~ 8,
+      # Open areas with little or no vegetation = 9
+      code_2018 == 33000 ~ 9)) |> 
     select(code_2018, category_2018) |> 
     arrange(category_2018) |> 
     unique()
@@ -87,11 +89,13 @@ CPH_LU_raw <- read.csv("Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhage
       code_2018 == 21000 | code_2018 == 22000 | code_2018 == 23000 | code_2018 == 24000 |
         code_2018 == 25000 ~ 5,
       # Natural and semi-natural areas = 6
-      code_2018 == 31000 | code_2018 == 32000 | code_2018 == 33000 ~ 6,
+      code_2018 == 31000 | code_2018 == 32000 ~ 6,
       # Wetlands = 7
       code_2018 == 40000 ~ 7,
       # Water = 8
-      code_2018 == 50000 ~ 8 )) |> 
+      code_2018 == 50000 ~ 8,
+      # Open areas with little or no vegetation = 9
+      code_2018 == 33000 ~ 9)) |> 
     select(code_2018, category_2018) |> 
     arrange(category_2018) |> 
     unique()
@@ -121,11 +125,13 @@ CPH_LU_raw <- read.csv("Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhage
       code_2018 == 21000 | code_2018 == 22000 | code_2018 == 23000 | code_2018 == 24000 |
         code_2018 == 25000 ~ 5,
       # Natural and semi-natural areas = 6
-      code_2018 == 31000 | code_2018 == 32000 | code_2018 == 33000 ~ 6,
+      code_2018 == 31000 | code_2018 == 32000 ~ 6,
       # Wetlands = 7
       code_2018 == 40000 ~ 7,
       # Water = 8
-      code_2018 == 50000 ~ 8 )) |> 
+      code_2018 == 50000 ~ 8,
+      # Open areas with little or no vegetation = 9
+      code_2018 == 33000 ~ 9)) |> 
     # 2) Calculate area by category
     group_by(category_2018) |> 
     reframe(area_m2 = sum(area_m2),
@@ -156,11 +162,13 @@ CPH_LU_raw <- read.csv("Copenhagen_Urban Atlas 2018.csv", sep = ",") # Copenhage
       code_2018 == 21000 | code_2018 == 22000 | code_2018 == 23000 | code_2018 == 24000 |
         code_2018 == 25000 ~ 5,
       # Natural and semi-natural areas = 6
-      code_2018 == 31000 | code_2018 == 32000 | code_2018 == 33000 ~ 6,
+      code_2018 == 31000 | code_2018 == 32000 ~ 6,
       # Wetlands = 7
       code_2018 == 40000 ~ 7,
       # Water = 8
-      code_2018 == 50000 ~ 8 )) |> 
+      code_2018 == 50000 ~ 8,
+      # Open areas with little or no vegetation = 9
+      code_2018 == 33000 ~ 9)) |> 
     # 2) Calculate area by category
     group_by(category_2018) |> 
     reframe(area_m2 = sum(area_m2),
@@ -184,8 +192,89 @@ CPH_LU_final <- CPH_LU_categories |>
 
 
 
+# ============================================
+# 4) Save as .csv-files
+# ============================================
+
+# Helsinki
+if (!file.exists("CSVs/Helsinki_LU_Areas.csv")) {
+  write.csv(HEL_LU_final, "CSVs/Helsinki_LU_Areas.csv")
+}
+
+# Copenhagen
+if (!file.exists("CSVs/Copenhagen_LU_Areas.csv")) {
+  write.csv(CPH_LU_final, "CSVs/Copenhagen_LU_Areas.csv")
+}
 
 
+# ============================================
+# 5) Pie-Charts
+# ============================================
+
+# Libraries
+library(ggplot2)
+library(patchwork)
+
+# Combined Pie Chart
+# NOTE: These pie charts show data for the 200m buffered administrative boundary!
+{
+  # extract category and area percent
+  h1 <- HEL_LU_final |> select(category_2018, area_percent) |> unique()
+  c1 <- CPH_LU_final |> select(category_2018, area_percent) |> unique()
+  
+  # define colors
+  cols <- c("#bf0000", "#959595", "#734d37", "#8cdc00", "#ffffa8", "#008c00", "#a6a6ff", "#80f2e6","#ccffcc")
+  
+  # define labels
+  lu_labels <- c(
+    "1" = "1: Urban fabric",
+    "2" = "2: Industrial, commercial, transport",
+    "3" = "3: Mine, dump, construction",
+    "4" = "4: Artificial green spaces",
+    "5" = "5: Agricultural land",
+    "6" = "6: Semi-/Natural green spaces",
+    "7" = "7: Wetlands",
+    "8" = "8: Waterbodies",
+    "9" = "9: Natural open spaces"
+  )
+  
+  # helsinki
+  p1 <- ggplot(h1, aes(x = "", y = area_percent, fill = as.factor(category_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Helsinki LU",
+         subtitle = "200m buffered boundaries data") +
+    scale_fill_manual(
+      values = cols,
+      labels = lu_labels,
+      name = "Land use"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # copenhagen
+  p2 <- ggplot(c1, aes(x = "", y = area_percent, fill = as.factor(category_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Copenhagen LU",
+         subtitle = "200m buffered boundaries data") +
+    scale_fill_manual(
+      values = cols,
+      labels = lu_labels,
+      name = "Land use"
+    ) +
+    theme(legend.position = "none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # patchwork
+  p1 + p2 + plot_layout(guides = "collect") &
+    theme(legend.position = "right")
+}
 
 
 

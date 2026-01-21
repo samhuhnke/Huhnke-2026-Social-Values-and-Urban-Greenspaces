@@ -83,7 +83,7 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 
 ### MT_03_General_Area_Metrics
 
-This code is intended to describe the land-uses for both Copenhagen and Helsinki as defined by the CLMS Urban Atlas 2018. This is done to enable later interpretation of the results as the prevalence of different land uses enables different uses by citizens. 
+This code is intended to describe the land-uses for both Copenhagen and Helsinki as defined by the CLMS Urban Atlas 2018. This is done to enable later interpretation of the results as the prevalence of different land uses enables different uses by citizens. This code also includes a pie chart to visualize the different land uses prevalent.
 
 Steps taken in QGIS:
 1. Establish area for all land-use categories in QGIS using the *Open field calculator* and the command *$area*. This creates area estimates in m2 for each land-use polygon.
