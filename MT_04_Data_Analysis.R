@@ -26,8 +26,15 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 # 1) Load necessary packages
 # ============================================
 
-library(tidyverse)
-library(ggplot2)
+library(tidyverse) # used for data handling
+library(ggplot2) # used for plotting
+library(rstatix) # used to assess effect sizes
+library(nnet) # used for multinomial logistic regression
+library(ggeffects) # to visualize results of multinomial logistic regression
+library(sf)
+library(geojsonsf) # to read geojson variable
+library(spdep)
+library(coin)
 
 # ============================================
 # 2) Load data
@@ -54,7 +61,7 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
     # add area data
     left_join(HEL_areas, by = "code_2018") |> 
     # select relevant variables
-    select(Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    select(geojson, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
     # rename canopy cover variable 
     rename(CanopyCover_mean = X_mean) |> 
     # further simplify classes into Greenspace, Forest, and Other
@@ -72,6 +79,15 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
   # join type area into complete data set
   HEL <- HEL |> 
     left_join(HEL_type_area, by = "type_2018")
+  
+  # Turn SV_new into categorical value (or factor in R)
+  HEL$SV_new <- factor(HEL$SV_new)
+  
+  # Create subsets
+  HEL_Forest <- HEL |> filter(type_2018 == "Forest")
+  HEL_Greenspace <- HEL |> filter(type_2018 == "Greenspace")
+  HEL_Other <- HEL |> filter(type_2018 == "Other")
+
 }
 
 # Copenhagen
@@ -80,7 +96,7 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
     # add area data
     left_join(CPH_areas, by = "code_2018") |> 
     # select relevant variables
-    select(Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    select(GeoJSON, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
     # rename canopy cover variable 
     rename(CanopyCover_mean = X_mean) |> 
     # further simplify classes into Greenspace, Forest, and Other
@@ -98,6 +114,14 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
   # join type area into complete data set
   CPH <- CPH |> 
     left_join(CPH_type_area, by = "type_2018")
+  
+  # Turn SV_new into categorical value (or factor in R)
+  CPH$SV_new <- factor(CPH$SV_new)
+  
+  # Create subsets
+  CPH_Forest <- CPH |> filter(type_2018 == "Forest")
+  CPH_Greenspace <- CPH |> filter(type_2018 == "Greenspace")
+  CPH_Other <- CPH |> filter(type_2018 == "Other")
 }
 
 # remove temporary layers
@@ -156,43 +180,60 @@ rm("CPH_type_area", "HEL_type_area")
 # Metrics
 
 # Point count & point density per type (i.e. forest, greenspace, other) 
-HEL |> group_by(type_2018) |> count() |> 
-  left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
-  mutate(point_density_km2 = n/type_area_km2)
+{
+  HEL |> group_by(type_2018) |> count() |> 
+    left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  CPH |> group_by(type_2018) |> count() |> 
+    left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+}
 
-CPH |> group_by(type_2018) |> count() |> 
-  left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
-  mutate(point_density_km2 = n/type_area_km2)
-
+# Point count & point density by type and social value
+{
+  HEL |> group_by(type_2018, SV_new) |> count() |> 
+    left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2) |> 
+    print(n = 25)
+  
+  CPH |> group_by(type_2018, SV_new) |> count() |> 
+    left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2) |> 
+    print(n = 25)
+}
 
 # How is canopy cover distributed overall? 
-HEL |> ggplot(aes(x = CanopyCover_mean)) +
-  geom_histogram()
-
-CPH |> ggplot(aes(x = CanopyCover_mean)) +
-  geom_histogram()
-
+{
+  HEL |> ggplot(aes(x = CanopyCover_mean)) +
+    geom_histogram()
+  
+  CPH |> ggplot(aes(x = CanopyCover_mean)) +
+    geom_histogram()
+}
 
 # How is canopy cover distributed by land-use type?
-## Helsinki all
-ggplot(HEL, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
-  geom_histogram(
-    position = "identity",
-    alpha = 0.7,
-    bins = 30
-  ) +
-  scale_fill_manual(values = type_cols) +
-  facet_wrap(~ type_2018)
-
-## Copenhagen all
-ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
-  geom_histogram(
-    position = "identity",
-    alpha = 0.7,
-    bins = 30
-  ) +
-  scale_fill_manual(values = type_cols) +
-  facet_wrap(~ type_2018)
+{
+  ## Helsinki all
+  ggplot(HEL, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
+    geom_histogram(
+      position = "identity",
+      alpha = 0.7,
+      bins = 30
+    ) +
+    scale_fill_manual(values = type_cols) +
+    facet_wrap(~ type_2018)
+  
+  ## Copenhagen all
+  ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
+    geom_histogram(
+      position = "identity",
+      alpha = 0.7,
+      bins = 30
+    ) +
+    scale_fill_manual(values = type_cols) +
+    facet_wrap(~ type_2018)
+}
 
 
 
@@ -200,7 +241,7 @@ ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
 # 6) Social value data analysis
 # ============================================
 
-# Histograms by type 
+# Histograms by type and social value 
 {
   # Helsinki
   HEL |> filter(type_2018 == "Forest") |> 
@@ -261,14 +302,12 @@ ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
   
 }
 
-# Correlations between SV and canopy cover divided by type
+# Correlations between SV and canopy cover NOT divided by type
 
-# Helsinki ---------------------------------
+# MOCKUP FOR Helsinki ---------------------------------
 # Approach 1: ANOVA
 # Question: Does canopy cover differ between different social values?
 {
-  # Turn SV_new into categorical value (or factor in R)
-  HEL$SV_new <- factor(HEL$SV_new)
   
   # ANOVA
   anova_model <- aov(CanopyCover_mean ~ SV_new, data = HEL)
@@ -288,7 +327,7 @@ ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
           col = sv_cols)
 }
 
-# Approach 2: Kruskal-Wallis
+# Approach 2: Kruskal-Wallis --> Presumably this is the main approach for RQ1 ! 
 # Question: Does canopy cover differ between different social values?
 {
   # Boxplot
@@ -308,19 +347,235 @@ ggplot(CPH, aes(x = CanopyCover_mean, fill = as.factor(type_2018))) +
   
 }
 
-
 # Approach 3: Multinomial logistic regression
-library(nnet)
+{
+  LR_model <- multinom(SV_new ~ CanopyCover_mean, data = HEL)
+  summary(LR_model)
+  
+  z <- summary(LR_model)$coefficients / summary(LR_model)$standard.errors
+  p <- 2 * (1 - pnorm(abs(z)))
+  p
+  
 
-LR_model <- multinom(SV_new ~ CanopyCover_mean, data = HEL)
-summary(LR_model)
-
-z <- summary(LR_model)$coefficients / summary(LR_model)$standard.errors
-p <- 2 * (1 - pnorm(abs(z)))
-p
-
-
-# Copenhagen ---------------------------------
+  
+  pred <- ggpredict(LR_model, terms = "CanopyCover_mean")
+  plot(pred)
+}
 
 
 
+# Correlations between SV and canopy cover divided by type =================
+
+# Helsinki Forest
+{
+  # Step 1) Exploratory Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Forest"),
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Step 2) Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
+  
+  # Step 3) Pairwise Wilcox
+  pairwise.wilcox.test(
+    HEL_Forest$CanopyCover_mean,
+    HEL_Forest$SV_new,
+    p.adjust.method = "BH")
+  
+  # Step 4) Effect Sizes
+  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
+  
+  # Step 5) Model-based multinomial regression
+  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+  m <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Forest)
+  summary(m) # Current reference category = 1
+  
+  pred <- ggpredict(m, terms = "CanopyCover_mean")
+  plot(pred) # visualization
+  
+}
+
+# Helsinki Greenspace
+{
+  # Step 1) Exploratory Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Greenspace"),
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Step 2) Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
+  
+  # Step 3) Pairwise Wilcox
+  pairwise.wilcox.test(
+    HEL_Greenspace$CanopyCover_mean,
+    HEL_Greenspace$SV_new,
+    p.adjust.method = "BH")
+  
+  # Step 4) Effect Sizes
+  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
+  
+  # Step 5) Model-based multinomial regression
+  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+  m <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Greenspace)
+  summary(m)
+  
+  pred <- ggpredict(m, terms = "CanopyCover_mean")
+  plot(pred) # visualization
+}
+
+# Helsinki Other
+{
+  # Step 1) Exploratory Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Other"),
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Step 2) Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
+  
+  # Step 3) Pairwise Wilcox
+  pairwise.wilcox.test(
+    HEL_Other$CanopyCover_mean,
+    HEL_Other$SV_new,
+    p.adjust.method = "BH")
+  
+  # Step 4) Effect Sizes
+  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
+  
+  # Step 5) Model-based multinomial regression
+  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+  m <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Other)
+  summary(m) # Current reference category = 1
+  
+  pred <- ggpredict(m, terms = "CanopyCover_mean")
+  plot(pred) # visualization
+}
+
+# Copenhagen Forest
+{
+  # Step 1) Exploratory Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Forest"),
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Step 2) Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
+  
+  # Step 3) Pairwise Wilcox
+  pairwise.wilcox.test(
+    CPH_Forest$CanopyCover_mean,
+    CPH_Forest$SV_new,
+    p.adjust.method = "BH")
+  
+  # Step 4) Effect Sizes
+  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
+  
+  # Step 5) Model-based multinomial regression
+  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+  m <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Forest)
+  summary(m) # Current reference category = 1
+  
+  pred <- ggpredict(m, terms = "CanopyCover_mean")
+  plot(pred) # visualization
+}
+
+# Copenhagen Greenspace
+{
+  # Step 1) Exploratory Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Greenspace"),
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Step 2) Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
+  
+  # Step 3) Pairwise Wilcox
+  pairwise.wilcox.test(
+    CPH_Greenspace$CanopyCover_mean,
+    CPH_Greenspace$SV_new,
+    p.adjust.method = "BH")
+  
+  # Step 4) Effect Sizes
+  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
+  
+  # Step 5) Model-based multinomial regression
+  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+  m <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Greenspace)
+  summary(m) # Current reference category = 1
+  
+  pred <- ggpredict(m, terms = "CanopyCover_mean")
+  plot(pred) # visualization
+}
+
+# Copenhagen Other
+{
+  # Step 1) Exploratory Box-Plot
+  boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Other"),
+          xlab = "Social value category",
+          ylab = "Mean canopy cover (%)",
+          col = sv_cols)
+  
+  # Step 2) Kruskal-Wallis
+  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
+  
+  # Step 3) Pairwise Wilcox
+  pairwise.wilcox.test(
+    CPH_Other$CanopyCover_mean,
+    CPH_Other$SV_new,
+    p.adjust.method = "BH")
+  
+  # Step 4) Effect Sizes
+  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
+  
+  # Step 5) Model-based multinomial regression
+  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+  m <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Other)
+  summary(m) # Current reference category = 1
+  
+  pred <- ggpredict(m, terms = "CanopyCover_mean")
+  plot(pred) # visualization
+}
+
+
+
+
+
+# Step 6) Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
+
+
+# convert to sf
+HEL_sf <- geojson_sf(HEL_Forest$geojson)
+HEL_sf <- cbind(HEL_sf, HEL_Forest[ , !names(HEL_Forest) %in% "geojson"])
+class(HEL_sf)
+st_crs(HEL_sf) <- 4326      # GeoJSON is almost always WGS84
+HEL_sf <- st_transform(HEL_sf, 3067)
+
+# Define neighbors by establishing distance 
+coords <- st_coordinates(HEL_sf)
+
+# rn virtually useless
+nb <- dnearneigh(coords, 0, 50) # last digit = distance to neighbor
+
+# create spatial blocks (factor) - you need to define this yourself
+# e.g., divide points into clusters based on coordinates
+set.seed(42)
+HEL_sf$block <- factor(kmeans(coords, centers = 50)$cluster)
+
+# spatial permutation test
+perm_test <- independence_test(
+  CanopyCover_mean ~ factor(SV_new) | block,  # <-- use 'block' in formula
+  data = HEL_sf,
+  distribution = approximate(nresample = 9999))  # updated argument
+
+perm_test
