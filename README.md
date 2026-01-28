@@ -119,22 +119,22 @@ Steps in R-Code:
 
 This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
 
-Section 7: Multilayered analysis process
+Section 6: Multilayered analysis process
 
 1. Do mapped SV in general co-occur with differing levels of canopy cover? This assesses all social values on a global level without any subsets.
 
-A: For Helsinki no, but according to the GAM results it is reasonable to assume there is are patterns in the data not revealed on a global level. 
-A: For Copenhagen, TBD
+A: For Helsinki, no, but according to the GAM results it is reasonable to assume there is are patterns in the data not revealed on a global level. 
+A: For Copenhagen, yes.
 
 2. Do mapped SV co-occur with differing levels of canopy cover if the data is seperated by land-use into forest, greenspace, and other? This assesses whether there are relationships between social values and canopy cover within land-uses.
 
-A:
-A: 
+A: For Helsinki. Yes.
+A: For Copenhagen. Yes.
 
 3. Based on 2., are there differences between different social values? This assesses whether each social value reacts the same way or whether there are differences between social values. Here, the code first assesses social values individually before it compares them to each other.
 
-A:
-A:
+A: For Helsinki. Yes.
+A: For Copenhagen. Yes.
 
 
-**Current: Repeated data analysis for Copenhagen. Issues with data availability due to previous data handling**
+**Current: Assess spatial structure via spatial permutation**

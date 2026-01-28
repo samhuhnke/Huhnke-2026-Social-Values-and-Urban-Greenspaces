@@ -26,7 +26,8 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 # 1) Load necessary packages
 # ============================================
 
-library(MASS) # for section 7) + load first otherwise it maskes select from dplyr
+library(MASS) # for section 7) + load before dplyr
+library(mgcv) # for section 7) + load before nnet
 library(tidyverse) # used for data handling
 library(ggplot2) # used for plotting
 library(rstatix) # used to assess effect sizes
@@ -36,7 +37,6 @@ library(sf)
 library(geojsonsf) # to read geojson variable
 library(spdep)
 library(coin)
-library(mgcv) # for section 7)
 library(rstatix)
 
 # ============================================
@@ -177,10 +177,8 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 # ============================================
-# 5) General data analysis
+# 5) General data analysis and exploratory plots
 # ============================================
-
-# Metrics
 
 # Point count & point density per type (i.e. forest, greenspace, other) 
 {
@@ -237,11 +235,6 @@ rm("CPH_type_area", "HEL_type_area")
     scale_fill_manual(values = type_cols) +
     facet_wrap(~ type_2018)
 }
-
-
-# ============================================
-# 6) Social value data analysis
-# ============================================
 
 # Histograms by type and social value 
 {
@@ -304,225 +297,10 @@ rm("CPH_type_area", "HEL_type_area")
   
 }
 
-# Correlations between SV and canopy cover divided by type =================
-
-# Helsinki Forest
-{
-  # Step 1) Exploratory Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Forest"),
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Step 2) Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
-  
-  # Step 3) Pairwise Wilcox
-  pairwise.wilcox.test(
-    HEL_Forest$CanopyCover_mean,
-    HEL_Forest$SV_new,
-    p.adjust.method = "BH")
-  
-  # Step 4) Effect Sizes
-  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
-  
-  # Step 5) Model-based multinomial regression
-  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
-  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
-  m <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Forest)
-  summary(m) # Current reference category = 1
-  
-  pred <- ggpredict(m, terms = "CanopyCover_mean")
-  plot(pred) # visualization
-  
-}
-
-# Helsinki Greenspace
-{
-  # Step 1) Exploratory Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Greenspace"),
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Step 2) Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
-  
-  # Step 3) Pairwise Wilcox
-  pairwise.wilcox.test(
-    HEL_Greenspace$CanopyCover_mean,
-    HEL_Greenspace$SV_new,
-    p.adjust.method = "BH")
-  
-  # Step 4) Effect Sizes
-  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
-  
-  # Step 5) Model-based multinomial regression
-  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
-  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
-  m <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Greenspace)
-  summary(m)
-  
-  pred <- ggpredict(m, terms = "CanopyCover_mean")
-  plot(pred) # visualization
-}
-
-# Helsinki Other
-{
-  # Step 1) Exploratory Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Other"),
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Step 2) Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
-  
-  # Step 3) Pairwise Wilcox
-  pairwise.wilcox.test(
-    HEL_Other$CanopyCover_mean,
-    HEL_Other$SV_new,
-    p.adjust.method = "BH")
-  
-  # Step 4) Effect Sizes
-  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
-  
-  # Step 5) Model-based multinomial regression
-  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
-  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
-  m <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Other)
-  summary(m) # Current reference category = 1
-  
-  pred <- ggpredict(m, terms = "CanopyCover_mean")
-  plot(pred) # visualization
-}
-
-# Copenhagen Forest
-{
-  # Step 1) Exploratory Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Forest"),
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Step 2) Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
-  
-  # Step 3) Pairwise Wilcox
-  pairwise.wilcox.test(
-    CPH_Forest$CanopyCover_mean,
-    CPH_Forest$SV_new,
-    p.adjust.method = "BH")
-  
-  # Step 4) Effect Sizes
-  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
-  
-  # Step 5) Model-based multinomial regression
-  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
-  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
-  m <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Forest)
-  summary(m) # Current reference category = 1
-  
-  pred <- ggpredict(m, terms = "CanopyCover_mean")
-  plot(pred) # visualization
-}
-
-# Copenhagen Greenspace
-{
-  # Step 1) Exploratory Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Greenspace"),
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Step 2) Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
-  
-  # Step 3) Pairwise Wilcox
-  pairwise.wilcox.test(
-    CPH_Greenspace$CanopyCover_mean,
-    CPH_Greenspace$SV_new,
-    p.adjust.method = "BH")
-  
-  # Step 4) Effect Sizes
-  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
-  
-  # Step 5) Model-based multinomial regression
-  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
-  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
-  m <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Greenspace)
-  summary(m) # Current reference category = 1
-  
-  pred <- ggpredict(m, terms = "CanopyCover_mean")
-  plot(pred) # visualization
-}
-
-# Copenhagen Other
-{
-  # Step 1) Exploratory Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Other"),
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Step 2) Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
-  
-  # Step 3) Pairwise Wilcox
-  pairwise.wilcox.test(
-    CPH_Other$CanopyCover_mean,
-    CPH_Other$SV_new,
-    p.adjust.method = "BH")
-  
-  # Step 4) Effect Sizes
-  kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
-  
-  # Step 5) Model-based multinomial regression
-  # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
-  # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
-  m <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Other)
-  summary(m) # Current reference category = 1
-  
-  pred <- ggpredict(m, terms = "CanopyCover_mean")
-  plot(pred) # visualization
-}
-
-
-# Step 6) Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
-
-
-# convert to sf
-HEL_sf <- geojson_sf(HEL_Forest$geojson)
-HEL_sf <- cbind(HEL_sf, HEL_Forest[ , !names(HEL_Forest) %in% "geojson"])
-class(HEL_sf)
-st_crs(HEL_sf) <- 4326      # GeoJSON is almost always WGS84
-HEL_sf <- st_transform(HEL_sf, 3067)
-
-# Define neighbors by establishing distance 
-coords <- st_coordinates(HEL_sf)
-
-# rn virtually useless
-nb <- dnearneigh(coords, 0, 50) # last digit = distance to neighbor
-
-# create spatial blocks (factor) - you need to define this yourself
-# e.g., divide points into clusters based on coordinates
-set.seed(42)
-HEL_sf$block <- factor(kmeans(coords, centers = 50)$cluster)
-
-# spatial permutation test
-perm_test <- independence_test(
-  CanopyCover_mean ~ factor(SV_new) | block,  # <-- use 'block' in formula
-  data = HEL_sf,
-  distribution = approximate(nresample = 9999))  # updated argument
-
-perm_test
-
-
-
-
 # ============================================
-# 7) Multilayered analysis 
+# 6) Multilayered analysis 
 # ============================================
+
 
 # Helsinki
 
@@ -759,78 +537,139 @@ perm_test
   # S2) By Land-Use
   {
     # Forest
-    # Step 1) Exploratory Box-Plot
-    boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Forest"),
-            xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
-            col = sv_cols)
-    
-    # Step 2) Kruskal-Wallis
-    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
-    
-    # Step 3) Kruskal effect size
-    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
-    
-    # Step 4) Pairwise Wilcox
-    pairwise.wilcox.test(
-      HEL_Forest$CanopyCover_mean,
-      HEL_Forest$SV_new,
-      p.adjust.method = "BH")
+    {
+      # Step 1) Exploratory Box-Plot
+      boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Forest"),
+              xlab = "Social value category",
+              ylab = "Mean canopy cover (%)",
+              col = sv_cols)
+      
+      # Step 2) Kruskal-Wallis
+      kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
+      
+      # Step 3) Kruskal effect size
+      kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
+      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        HEL_Forest$CanopyCover_mean,
+        HEL_Forest$SV_new,
+        p.adjust.method = "BH")
+    }
     
     # Greenspace
-    # Step 1) Exploratory Box-Plot
-    boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Greenspace"),
-            xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
-            col = sv_cols)
-    
-    # Step 2) Kruskal-Wallis
-    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
-    
-    # Step 3) Kruskal effect size
-    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
-    
-    # Step 4) Pairwise Wilcox
-    pairwise.wilcox.test(
-      HEL_Greenspace$CanopyCover_mean,
-      HEL_Greenspace$SV_new,
-      p.adjust.method = "BH")
+    {
+      # Step 1) Exploratory Box-Plot
+      boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Greenspace"),
+              xlab = "Social value category",
+              ylab = "Mean canopy cover (%)",
+              col = sv_cols)
+      
+      # Step 2) Kruskal-Wallis
+      kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
+      
+      # Step 3) Kruskal effect size
+      kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
+      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        HEL_Greenspace$CanopyCover_mean,
+        HEL_Greenspace$SV_new,
+        p.adjust.method = "BH")
+    }
     
     # Other
-    # Step 1) Exploratory Box-Plot
-    boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Other"),
-            xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
-            col = sv_cols)
-    
-    # Step 2) Kruskal-Wallis
-    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
-    
-    # Step 3) Kruskal effect size
-    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
-    
-    # Step 4) Pairwise Wilcox
-    pairwise.wilcox.test(
-      HEL_Other$CanopyCover_mean,
-      HEL_Other$SV_new,
-      p.adjust.method = "BH")
+    {
+      # Step 1) Exploratory Box-Plot
+      boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Other"),
+              xlab = "Social value category",
+              ylab = "Mean canopy cover (%)",
+              col = sv_cols)
+      
+      # Step 2) Kruskal-Wallis
+      kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
+      
+      # Step 3) Kruskal effect size
+      kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
+      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        HEL_Other$CanopyCover_mean,
+        HEL_Other$SV_new,
+        p.adjust.method = "BH")
+      
+    }
     
     # Comparative plot
-    ggplot(HEL, aes(x = SV_new, y = CanopyCover_mean, fill = SV_new)) +
-      geom_boxplot(outlier.shape = 21, outlier.size = 2, alpha = 0.8) +  
-      facet_wrap(~type_2018) +
-      scale_fill_manual(values = sv_cols,
-                        labels = sv_labels) +                              
-      labs(
-        x = "Social values",
-        y = "Canopy Cover (%)",
-        fill = "Social value"
-      ) +
-      theme_minimal(base_size = 14) +
-      theme(
-        strip.text = element_text(face = "bold"),                        
-        legend.position = "right"                                         
-      )
+    {
+      ggplot(HEL, aes(x = SV_new, y = CanopyCover_mean, fill = SV_new)) +
+        geom_boxplot(outlier.shape = 21, outlier.size = 2, alpha = 0.8) +  
+        facet_wrap(~type_2018) +
+        scale_fill_manual(values = sv_cols,
+                          labels = sv_labels) +                              
+        labs(
+          x = "Social values",
+          y = "Canopy Cover (%)",
+          fill = "Social value"
+        ) +
+        theme_minimal(base_size = 14) +
+        theme(
+          strip.text = element_text(face = "bold"),                        
+          legend.position = "right"                                         
+        )
+    }
+    
+    # Multinomial logistic regression (MLR)
+    # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+    # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+    {
+      # Individual MLRs
+      MLR_Forest <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Forest)
+      MLR_Greenspace <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Greenspace)
+      MLR_Other <- multinom(SV_new ~ CanopyCover_mean, data = HEL_Other)
+      
+      summary(MLR_Forest) # Current reference category = 1
+      summary(MLR_Greenspace) # Current reference category = 1
+      summary(MLR_Other) # Current reference category = 1
+      
+      pred_Forest <- ggpredict(MLR_Forest, terms = "CanopyCover_mean")
+      plot(pred_Forest) # visualization
+      
+      pred_Greenspace <- ggpredict(MLR_Greenspace, terms = "CanopyCover_mean")
+      plot(pred_Greenspace) # visualization
+      
+      pred_Other <- ggpredict(MLR_Other, terms = "CanopyCover_mean")
+      plot(pred_Other) # visualization
+      
+      
+      # Comparative MLR across all land-uses
+      MLR_HEL_all <- multinom(SV_new ~ CanopyCover_mean * type_2018, data = HEL)
+      summary(MLR_HEL_all)
+      
+      pred_HEL_all <- ggpredict(MLR_HEL_all, terms = c("CanopyCover_mean [all]", "type_2018"))
+      head(pred_HEL_all)
+      names(pred_HEL_all)
+      
+      # simple plot divided into different social values
+      plot(pred_HEL_all) 
+      
+      # plot divided into different land-uses
+      pred_HEL_all$group <- factor(pred_HEL_all$group, levels = c("Forest", "Greenspace", "Other")) # to order factes
+      
+      ggplot(pred_HEL_all, aes(x = x, y = predicted, color = response.level, group = response.level)) +
+        geom_line(linewidth = 1.2) +
+        facet_wrap(~group) +  # this specifies the panels
+        scale_color_manual(values = sv_cols,
+                           labels = sv_labels) +
+        labs(
+          x = "Canopy Cover (%)",
+          y = "Predicted Probability",
+          color = "Social Value"
+        ) +
+        theme_minimal(base_size = 14)
+    }
+    
+    
   }
 }
 
@@ -1062,80 +901,173 @@ perm_test
   # S2) By Land-Use
   {
     # Forest
-    # Step 1) Exploratory Box-Plot
-    boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Forest"),
-            xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
-            col = sv_cols)
-    
-    # Step 2) Kruskal-Wallis
-    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
-    
-    # Step 3) Kruskal effect size
-    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
-    
-    # Step 4) Pairwise Wilcox
-    pairwise.wilcox.test(
-      CPH_Forest$CanopyCover_mean,
-      CPH_Forest$SV_new,
-      p.adjust.method = "BH")
+    {
+      # Step 1) Exploratory Box-Plot
+      boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Forest"),
+              xlab = "Social value category",
+              ylab = "Mean canopy cover (%)",
+              col = sv_cols)
+      
+      # Step 2) Kruskal-Wallis
+      kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
+      
+      # Step 3) Kruskal effect size
+      kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
+      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        CPH_Forest$CanopyCover_mean,
+        CPH_Forest$SV_new,
+        p.adjust.method = "BH")
+    }
     
     # Greenspace
-    # Step 1) Exploratory Box-Plot
-    boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Greenspace"),
-            xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
-            col = sv_cols)
-    
-    # Step 2) Kruskal-Wallis
-    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
-    
-    # Step 3) Kruskal effect size
-    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
-    
-    # Step 4) Pairwise Wilcox
-    pairwise.wilcox.test(
-      CPH_Greenspace$CanopyCover_mean,
-      CPH_Greenspace$SV_new,
-      p.adjust.method = "BH")
+    {
+      # Step 1) Exploratory Box-Plot
+      boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Greenspace"),
+              xlab = "Social value category",
+              ylab = "Mean canopy cover (%)",
+              col = sv_cols)
+      
+      # Step 2) Kruskal-Wallis
+      kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
+      
+      # Step 3) Kruskal effect size
+      kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
+      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        CPH_Greenspace$CanopyCover_mean,
+        CPH_Greenspace$SV_new,
+        p.adjust.method = "BH")
+    }
     
     # Other
-    # Step 1) Exploratory Box-Plot
-    boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Other"),
-            xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
-            col = sv_cols)
-    
-    # Step 2) Kruskal-Wallis
-    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
-    
-    # Step 3) Kruskal effect size
-    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
-    
-    # Step 4) Pairwise Wilcox
-    pairwise.wilcox.test(
-      CPH_Other$CanopyCover_mean,
-      CPH_Other$SV_new,
-      p.adjust.method = "BH")
+    {
+      # Step 1) Exploratory Box-Plot
+      boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Other"),
+              xlab = "Social value category",
+              ylab = "Mean canopy cover (%)",
+              col = sv_cols)
+      
+      # Step 2) Kruskal-Wallis
+      kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
+      
+      # Step 3) Kruskal effect size
+      kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
+      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        CPH_Other$CanopyCover_mean,
+        CPH_Other$SV_new,
+        p.adjust.method = "BH")
+    }
     
     # Comparative plot
-    ggplot(CPH, aes(x = SV_new, y = CanopyCover_mean, fill = SV_new)) +
-      geom_boxplot(outlier.shape = 21, outlier.size = 2, alpha = 0.8) +  
-      facet_wrap(~type_2018) +
-      scale_fill_manual(values = sv_cols,
-                        labels = sv_labels) +                              
-      labs(
-        x = "Social values",
-        y = "Canopy Cover (%)",
-        fill = "Social value"
-      ) +
-      theme_minimal(base_size = 14) +
-      theme(
-        strip.text = element_text(face = "bold"),                        
-        legend.position = "right"                                         
-      )
+    {
+      ggplot(CPH, aes(x = SV_new, y = CanopyCover_mean, fill = SV_new)) +
+        geom_boxplot(outlier.shape = 21, outlier.size = 2, alpha = 0.8) +  
+        facet_wrap(~type_2018) +
+        scale_fill_manual(values = sv_cols,
+                          labels = sv_labels) +                              
+        labs(
+          x = "Social values",
+          y = "Canopy Cover (%)",
+          fill = "Social value"
+        ) +
+        theme_minimal(base_size = 14) +
+        theme(
+          strip.text = element_text(face = "bold"),                        
+          legend.position = "right"                                         
+        )
+    }
+    
+    # Multinomial logistic regression (MLR)
+    # NOTE: multinom() uses whichever category is first as the reference. To change the reference category use
+    # NOTE: df$SV_new <- factor(df$SV_new, levels = c("reference", "c1", "c2", "and so on"))
+    {
+      # Individual MLRs
+      MLR_Forest <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Forest)
+      MLR_Greenspace <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Greenspace)
+      MLR_Other <- multinom(SV_new ~ CanopyCover_mean, data = CPH_Other)
+      
+      summary(MLR_Forest) # Current reference category = 1
+      summary(MLR_Greenspace) # Current reference category = 1
+      summary(MLR_Other) # Current reference category = 1
+      
+      pred_Forest <- ggpredict(MLR_Forest, terms = "CanopyCover_mean")
+      plot(pred_Forest) # visualization
+      
+      pred_Greenspace <- ggpredict(MLR_Greenspace, terms = "CanopyCover_mean")
+      plot(pred_Greenspace) # visualization
+      
+      pred_Other <- ggpredict(MLR_Other, terms = "CanopyCover_mean")
+      plot(pred_Other) # visualization
+      
+      
+      # Comparative MLR across all land-uses
+      MLR_CPH_all <- multinom(SV_new ~ CanopyCover_mean * type_2018, data = CPH)
+      summary(MLR_CPH_all)
+      
+      pred_CPH_all <- ggpredict(MLR_CPH_all, terms = c("CanopyCover_mean [all]", "type_2018"))
+      head(pred_CPH_all)
+      names(pred_CPH_all)
+      
+      # simple plot divided into different social values
+      plot(pred_CPH_all) 
+      
+      # plot divided into different land-uses
+      pred_CPH_all$group <- factor(pred_CPH_all$group, levels = c("Forest", "Greenspace", "Other")) # to order factes
+      
+      ggplot(pred_CPH_all, aes(x = x, y = predicted, color = response.level, group = response.level)) +
+        geom_line(linewidth = 1.2) +
+        facet_wrap(~group) +  # this specifies the panels
+        scale_color_manual(values = sv_cols,
+                           labels = sv_labels) +
+        labs(
+          x = "Canopy Cover (%)",
+          y = "Predicted Probability",
+          color = "Social Value"
+        ) +
+        theme_minimal(base_size = 14)
+    }
+    
   }
+  
+  
+  
 }
 
 
+
+
+# Spatial Analysis: Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
+{
+  # convert to sf
+  HEL_sf <- geojson_sf(HEL_Forest$geojson)
+  HEL_sf <- cbind(HEL_sf, HEL_Forest[ , !names(HEL_Forest) %in% "geojson"])
+  class(HEL_sf)
+  st_crs(HEL_sf) <- 4326      # GeoJSON is almost always WGS84
+  HEL_sf <- st_transform(HEL_sf, 3067)
+  
+  # Define neighbors by establishing distance 
+  coords <- st_coordinates(HEL_sf)
+  
+  # rn virtually useless
+  nb <- dnearneigh(coords, 0, 50) # last digit = distance to neighbor
+  
+  # create spatial blocks (factor) - you need to define this yourself
+  # e.g., divide points into clusters based on coordinates
+  set.seed(42)
+  HEL_sf$block <- factor(kmeans(coords, centers = 50)$cluster)
+  
+  # spatial permutation test
+  perm_test <- independence_test(
+    CanopyCover_mean ~ factor(SV_new) | block,  # <-- use 'block' in formula
+    data = HEL_sf,
+    distribution = approximate(nresample = 9999))  # updated argument
+  
+  perm_test
+  
+}
 
