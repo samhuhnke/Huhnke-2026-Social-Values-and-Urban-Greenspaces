@@ -135,3 +135,6 @@ A:
 
 A:
 A:
+
+
+**Current: Repeated data analysis for Copenhagen. Issues with data availability due to previous data handling**

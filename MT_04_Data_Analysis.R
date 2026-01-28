@@ -37,6 +37,7 @@ library(geojsonsf) # to read geojson variable
 library(spdep)
 library(coin)
 library(mgcv) # for section 7)
+library(rstatix)
 
 # ============================================
 # 2) Load data
@@ -167,9 +168,9 @@ rm("CPH_type_area", "HEL_type_area")
     "1" = "1: Relaxation",
     "2" = "2: Natural Values",
     "3" = "3: Aesthetics",
-    "4" = "4: Physical Well-Being and Outdoor Activity",
+    "4" = "4: Physical Well-Being and \n  Outdoor Activity",
     "5" = "5: Social Interaction",
-    "6" = "6: Heritage and Community Values",
+    "6" = "6: Heritage and \n  Community Values",
     "7" = "7: Spiritual Values",
     "8" = "8: Personal Identity"
   )
@@ -302,67 +303,6 @@ rm("CPH_type_area", "HEL_type_area")
     facet_wrap(~ SV_new)
   
 }
-
-# Correlations between SV and canopy cover NOT divided by type
-
-# MOCKUP FOR Helsinki ---------------------------------
-# Approach 1: ANOVA
-# Question: Does canopy cover differ between different social values?
-{
-  
-  # ANOVA
-  anova_model <- aov(CanopyCover_mean ~ SV_new, data = HEL)
-  summary(anova_model)
-  
-  # Effect sizes
-  eta_sq <- 837424 / (837424 + 13019985)
-  eta_sq # Interpretation: about 6% of the variance in canopy cover is explained by social values
-  
-  # Follow-up Tukey test
-  TukeyHSD(anova_model)
-  
-  # Box-Plot
-  boxplot(CanopyCover_mean ~ SV_new, data = HEL,
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-}
-
-# Approach 2: Kruskal-Wallis --> Presumably this is the main approach for RQ1 ! 
-# Question: Does canopy cover differ between different social values?
-{
-  # Boxplot
-  boxplot(CanopyCover_mean ~ SV_new, data = HEL,
-          xlab = "Social value category",
-          ylab = "Mean canopy cover (%)",
-          col = sv_cols)
-  
-  # Kruskal-Wallis
-  kruskal.test(CanopyCover_mean ~ SV_new, data = HEL)
-  
-  # Follow-up Wilcox
-  pairwise.wilcox.test(
-    HEL$CanopyCover_mean,
-    HEL$SV_new,
-    p.adjust.method = "BH")
-  
-}
-
-# Approach 3: Multinomial logistic regression
-{
-  LR_model <- multinom(SV_new ~ CanopyCover_mean, data = HEL)
-  summary(LR_model)
-  
-  z <- summary(LR_model)$coefficients / summary(LR_model)$standard.errors
-  p <- 2 * (1 - pnorm(abs(z)))
-  p
-  
-
-  
-  pred <- ggpredict(LR_model, terms = "CanopyCover_mean")
-  plot(pred)
-}
-
 
 # Correlations between SV and canopy cover divided by type =================
 
@@ -581,121 +521,621 @@ perm_test
 
 
 # ============================================
-# 7) Multilayered analysis TEST
+# 7) Multilayered analysis 
 # ============================================
 
+# Helsinki
+
 # Q1: Do mapped SV in general co-occur with canopy cover? -----------------
-
-# S2) - S7) with the inclusion of bin 2.5 (which includes 0s)
 {
-  # S1) binned data
-  HEL_binned <- HEL %>%
-    mutate(
-      canopy_bin = cut(
-        CanopyCover_mean,
-        breaks = seq(0, 100, by = 5),
-        include.lowest = TRUE,
-        labels = seq(2.5, 97.5, by = 5)
+  # S1) - S7) with the inclusion of bin 2.5 (which includes 0s)
+  {
+    # S1) binned data
+    HEL_binned <- HEL %>%
+      mutate(
+        canopy_bin = cut(
+          CanopyCover_mean,
+          breaks = seq(0, 100, by = 5),
+          include.lowest = TRUE,
+          labels = seq(2.5, 97.5, by = 5)
+        )
       )
-    )
-  
-  # S2) counts of mapped points for each bin
-  canopy_counts <- HEL_binned %>%
-    count(canopy_bin) %>%
-    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
-  
-  # S3) plot showing the relation
-  ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
-    geom_point() +
-    geom_smooth(method = "loess", se = TRUE) +
-    labs(
-      x = "Canopy cover (%)",
-      y = "Number of mapped social values",
-      title = "Frequency of mapped social values along canopy cover gradient"
-    )
-  
-  # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
-  pois_mod <- glm(
-    n ~ canopy_mid,
-    family = poisson(link = "log"),
-    data = canopy_counts
-  )
-  summary(pois_mod)
-  
-  exp(0.00164) # A 1% increase in canopy cover would lead to a 0.16% increase in counts of social values
-  
-  # S5) Check for dispersion
-  dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
-    df.residual(pois_mod)
-  
-  dispersion # dispersion 283.085 >> 2, so switch to negative binomial!
-  
-  # S6) Negative Binomial
-  nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
-  summary(nb_mod)
-  
-  exp(0.001379) # A 1% increase in canopy cover would lead to a 0.14% increase in counts of social values, BUT p = 0.777, i.e. non-significant
-  
-  # S7) Generalized Additive Model (GAM)
-  gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
-  summary(gam_mod)
-}
-
-# S2) - S7) without of bin 2.5 (which includes 0s)
-{
-  # S1) binned data
-  HEL_binned <- HEL %>%
-    mutate(
-      canopy_bin = cut(
-        CanopyCover_mean,
-        breaks = seq(0, 100, by = 5),
-        include.lowest = TRUE,
-        labels = seq(2.5, 97.5, by = 5)
+    
+    # S2) counts of mapped points for each bin
+    canopy_counts <- HEL_binned %>%
+      count(canopy_bin) %>%
+      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+    
+    # S3) plot showing the relation
+    ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
+      geom_point() +
+      geom_smooth(method = "loess", se = TRUE) +
+      labs(
+        x = "Canopy cover (%)",
+        y = "Number of mapped social values",
+        title = "Frequency of mapped social values along canopy cover gradient"
       )
+    
+    # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
+    pois_mod <- glm(
+      n ~ canopy_mid,
+      family = poisson(link = "log"),
+      data = canopy_counts
     )
+    summary(pois_mod)
+    
+    exp(0.00164) # A 1% increase in canopy cover would lead to a 0.16% increase in counts of social values
+    
+    # S5) Check for dispersion
+    dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
+      df.residual(pois_mod)
+    
+    dispersion # dispersion 283.085 >> 2, so switch to negative binomial!
+    
+    # S6) Negative Binomial
+    nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
+    summary(nb_mod)
+    
+    exp(0.001379) # A 1% increase in canopy cover would lead to a 0.14% increase in counts of social values, BUT p = 0.777, i.e. non-significant
+    
+    # S7) Generalized Additive Model (GAM)
+    gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
+    summary(gam_mod)
+    
+    plot(gam_mod, rug = TRUE)
+    
+  }
   
-  # S2) counts of mapped points for each 5% bin
-  canopy_counts <- HEL_binned %>%
-    count(canopy_bin) %>%
-    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
-  
-  canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
-  
-  # S3) plot showing the relation
-  ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
-    geom_point() +
-    geom_smooth(method = "loess", se = TRUE) +
-    labs(
-      x = "Canopy cover (%)",
-      y = "Number of mapped social values",
-      title = "Frequency of mapped social values along canopy cover gradient"
+  # S1) - S7) without of bin 2.5 (which includes 0s)
+  {
+    # S1) binned data
+    HEL_binned <- HEL %>%
+      mutate(
+        canopy_bin = cut(
+          CanopyCover_mean,
+          breaks = seq(0, 100, by = 5),
+          include.lowest = TRUE,
+          labels = seq(2.5, 97.5, by = 5)
+        )
+      )
+    
+    # S2) counts of mapped points for each 5% bin
+    canopy_counts <- HEL_binned %>%
+      count(canopy_bin) %>%
+      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+    
+    canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
+    
+    # S3) plot showing the relation
+    ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
+      geom_point() +
+      geom_smooth(method = "loess", se = TRUE) +
+      labs(
+        x = "Canopy cover (%)",
+        y = "Number of mapped social values",
+        title = "Frequency of mapped social values along canopy cover gradient"
+      )
+    
+    # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
+    pois_mod <- glm(
+      n ~ canopy_mid,
+      family = poisson(link = "log"),
+      data = canopy_counts
     )
-  
-  # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
-  pois_mod <- glm(
-    n ~ canopy_mid,
-    family = poisson(link = "log"),
-    data = canopy_counts
-  )
-  
-  summary(pois_mod)
-  
-  # S5) Check for dispersion
-  dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
-    df.residual(pois_mod)
-  dispersion # dispersion high so switch to negative binomial instead
-  
-  # S6) Negative Binomial
-  nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
-  summary(nb_mod)
-  
-  # S7) Generalized Additive Model (GAM)
-  gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
-  summary(gam_mod)
+    
+    summary(pois_mod)
+    
+    # S5) Check for dispersion
+    dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
+      df.residual(pois_mod)
+    dispersion # dispersion high so switch to negative binomial instead
+    
+    # S6) Negative Binomial
+    nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
+    summary(nb_mod)
+    
+    # S7) Generalized Additive Model (GAM)
+    gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
+    summary(gam_mod)
+  }
 }
 
 # Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
+{
+  # S1) Binned data
+  HEL_binned <- HEL %>%
+    mutate(
+      canopy_bin = cut(
+        CanopyCover_mean,
+        breaks = seq(0, 100, by = 5),
+        include.lowest = TRUE,
+        labels = seq(2.5, 97.5, by = 5)
+      )
+    )
+  
+  # S2) canopy counts by land-use
+  canopy_counts_lu <- HEL_binned %>%
+    group_by(type_2018, canopy_bin) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+  
+  # S3) GLMS - Question: Does land-use have a significant impact on the relation?
+  
+  # interaction model
+  nb_lu_mod <- glm.nb(
+    n ~ canopy_mid * type_2018,
+    data = canopy_counts_lu
+  )
+  
+  # no interaction model
+  nb_no_interaction <- glm.nb(
+    n ~ canopy_mid + type_2018,
+    data = canopy_counts_lu
+  )
+  
+  # ANOVA to compare both
+  # NOTE: no interaction model still doesn't converge
+  # NOTE: Hence in S4) this analysis will be repeated but the canopy counts are centered first
+  anova(nb_no_interaction, nb_lu_mod, test = "Chisq") 
+  
+  # S4) center canopy counts + re-run models
+  canopy_counts_lu <- canopy_counts_lu %>%
+    mutate(canopy_c = scale(canopy_mid, center = TRUE, scale = FALSE))
+  
+  # interaction model
+  nb_lu_mod <- glm.nb(
+    n ~ canopy_mid * type_2018,
+    data = canopy_counts_lu
+  )
+  
+  summary(nb_lu_mod)
+  
+  # no interaction model
+  nb_no_interaction <- glm.nb(
+    n ~ canopy_mid + type_2018,
+    data = canopy_counts_lu
+  )
+  
+  # ANOVE to compare both
+  # NOTE: no interaction model still doesn't converge
+  # RESULTS: interaction significantly improves model perfomance (LR = 90.94), df = 2 (for greenspace and other, with forest as baseline), P = 0
+  # RESULTS: Land-uses differ relationship between social value count and canopy cover
+  anova(nb_no_interaction, nb_lu_mod, test = "Chisq")
+  
+  # S4.2) Alternative: GAM
+  canopy_counts_lu$type_2018 <- as.factor(canopy_counts_lu$type_2018)
+  
+  gam_lu <- gam(
+    n ~ s(canopy_mid, by = type_2018) + type_2018,
+    family = nb(),
+    data = canopy_counts_lu,
+    method = "REML"
+  )
+  
+  summary(gam_lu)
+  
+  # S5) Results of negative binomial GLM for each land-use
+  # RESULTS: For forests, for each 1% increase in canopy cover, we see a 3% increase in social value counts
+  # RESULTS: For greenspaces, for each 1% increase in canopy cover, we see a -1% decrease in social value counts
+  # RESULTS: For other, for each 1% increase in canopy cover, we see a -4% decrease in social value counts
+  by(canopy_counts_lu, canopy_counts_lu$type_2018, function(df) {
+    summary(glm.nb(n ~ canopy_c, data = df))
+  })
+  exp(0.034582)
+  -(1 - exp(-0.01031))
+  -(1 - exp(-0.04206))
+  
+  
+  # S) Visualization
+  ggplot(canopy_counts_lu,
+         aes(x = canopy_mid, y = n, color = type_2018)) +
+    geom_point() +
+    geom_smooth(method = "glm.nb", se = TRUE) +
+    labs(
+      x = "Canopy cover (%)",
+      y = "Number of mapped social values",
+      color = "Land-use"
+    )
+}
 
-# 
+# Q3: Are there differences between social values?
+{
+  # S1) Global tests
+  {
+    kruskal.test(CanopyCover_mean ~ SV_new, data = HEL)
+    
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL)
+    
+    pairwise.wilcox.test(HEL$CanopyCover_mean, HEL$SV_new,  p.adjust.method = "BH") # or "bonferroni"
+    
+    wilcox_effsize()
+    
+    boxplot(CanopyCover_mean ~ SV_new, data = HEL,
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+  }
+  
+  # S2) By Land-Use
+  {
+    # Forest
+    # Step 1) Exploratory Box-Plot
+    boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Forest"),
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+    
+    # Step 2) Kruskal-Wallis
+    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
+    
+    # Step 3) Kruskal effect size
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
+    
+    # Step 4) Pairwise Wilcox
+    pairwise.wilcox.test(
+      HEL_Forest$CanopyCover_mean,
+      HEL_Forest$SV_new,
+      p.adjust.method = "BH")
+    
+    # Greenspace
+    # Step 1) Exploratory Box-Plot
+    boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Greenspace"),
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+    
+    # Step 2) Kruskal-Wallis
+    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
+    
+    # Step 3) Kruskal effect size
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
+    
+    # Step 4) Pairwise Wilcox
+    pairwise.wilcox.test(
+      HEL_Greenspace$CanopyCover_mean,
+      HEL_Greenspace$SV_new,
+      p.adjust.method = "BH")
+    
+    # Other
+    # Step 1) Exploratory Box-Plot
+    boxplot(CanopyCover_mean ~ SV_new, data = HEL |> filter(type_2018 == "Other"),
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+    
+    # Step 2) Kruskal-Wallis
+    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
+    
+    # Step 3) Kruskal effect size
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
+    
+    # Step 4) Pairwise Wilcox
+    pairwise.wilcox.test(
+      HEL_Other$CanopyCover_mean,
+      HEL_Other$SV_new,
+      p.adjust.method = "BH")
+    
+    # Comparative plot
+    ggplot(HEL, aes(x = SV_new, y = CanopyCover_mean, fill = SV_new)) +
+      geom_boxplot(outlier.shape = 21, outlier.size = 2, alpha = 0.8) +  
+      facet_wrap(~type_2018) +
+      scale_fill_manual(values = sv_cols,
+                        labels = sv_labels) +                              
+      labs(
+        x = "Social values",
+        y = "Canopy Cover (%)",
+        fill = "Social value"
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        strip.text = element_text(face = "bold"),                        
+        legend.position = "right"                                         
+      )
+  }
+}
+
+
+# Copenhagen
+
+# Q1: Do mapped SV in general co-occur with canopy cover? -----------------
+{
+  # S1) - S7) with the inclusion of bin 2.5 (which includes 0s)
+  {
+    # S1) binned data
+    CPH_binned <- CPH %>%
+      mutate(
+        canopy_bin = cut(
+          CanopyCover_mean,
+          breaks = seq(0, 100, by = 5),
+          include.lowest = TRUE,
+          labels = seq(2.5, 97.5, by = 5)
+        )
+      )
+    
+    # S2) counts of mapped points for each bin
+    canopy_counts <- CPH_binned %>%
+      count(canopy_bin) %>%
+      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+    
+    # S3) plot showing the relation
+    ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
+      geom_point() +
+      geom_smooth(method = "loess", se = TRUE) +
+      labs(
+        x = "Canopy cover (%)",
+        y = "Number of mapped social values",
+        title = "Frequency of mapped social values along canopy cover gradient"
+      )
+    
+    # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
+    pois_mod <- glm(
+      n ~ canopy_mid,
+      family = poisson(link = "log"),
+      data = canopy_counts
+    )
+    summary(pois_mod)
+    
+    -(1 - exp(-0.0257760)) # A 1% increase in canopy cover would lead to a -2.5% decrease in counts of social values
+    
+    # S5) Check for dispersion
+    dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
+      df.residual(pois_mod)
+    
+    dispersion # dispersion 255.37 >> 2, so switch to negative binomial!
+    
+    # S6) Negative Binomial
+    nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
+    summary(nb_mod)
+    
+    -(1 - exp(0.018497)) # A 1% increase in canopy cover would lead to a -1.9% decrease in counts of social values
+    
+    # S7) Generalized Additive Model (GAM)
+    gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
+    summary(gam_mod) # edf = 8.375  -> "wiggly"; p = ***; 
+    
+    plot(gam_mod, rug = TRUE)
+  }
+  
+  # S1) - S7) without of bin 2.5 (which includes 0s)
+  {
+    # S1) binned data
+    CPH_binned <- CPH %>%
+      mutate(
+        canopy_bin = cut(
+          CanopyCover_mean,
+          breaks = seq(0, 100, by = 5),
+          include.lowest = TRUE,
+          labels = seq(2.5, 97.5, by = 5)
+        )
+      )
+    
+    # S2) counts of mapped points for each 5% bin
+    canopy_counts <- CPH_binned %>%
+      count(canopy_bin) %>%
+      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+    
+    canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
+    
+    # S3) plot showing the relation
+    ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
+      geom_point() +
+      geom_smooth(method = "loess", se = TRUE) +
+      labs(
+        x = "Canopy cover (%)",
+        y = "Number of mapped social values",
+        title = "Frequency of mapped social values along canopy cover gradient"
+      )
+    
+    # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
+    pois_mod <- glm(
+      n ~ canopy_mid,
+      family = poisson(link = "log"),
+      data = canopy_counts
+    )
+    
+    summary(pois_mod)
+    
+    # S5) Check for dispersion
+    dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
+      df.residual(pois_mod)
+    dispersion # dispersion high so switch to negative binomial instead
+    
+    # S6) Negative Binomial
+    nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
+    summary(nb_mod)
+    
+    # S7) Generalized Additive Model (GAM)
+    gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
+    summary(gam_mod)
+    
+    plot(gam_mod, rug = TRUE)
+  }
+}
+
+# Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
+{
+  # S1) Binned data
+  CPH_binned <- CPH %>%
+    mutate(
+      canopy_bin = cut(
+        CanopyCover_mean,
+        breaks = seq(0, 100, by = 5),
+        include.lowest = TRUE,
+        labels = seq(2.5, 97.5, by = 5)
+      )
+    )
+  
+  # S2) canopy counts by land-use
+  canopy_counts_lu <- CPH_binned %>%
+    group_by(type_2018, canopy_bin) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+  
+  
+  # S3) GLMS - Question: Does land-use have a significant impact on the relation?
+  # NOTE: This does not work, probably because there is too many missing bins for some of the land uses
+  
+  # interaction model
+  nb_lu_mod <- glm.nb(
+    n ~ canopy_mid * type_2018,
+    data = canopy_counts_lu
+  )
+  
+  # no interaction model
+  nb_no_interaction <- glm.nb(
+    n ~ canopy_mid + type_2018,
+    data = canopy_counts_lu
+  )
+  
+  # ANOVA to compare both
+  anova(nb_no_interaction, nb_lu_mod, test = "Chisq") 
+  
+  # S4) center canopy counts + re-run models
+  # NOTE: This does not work, probably because there is too many missing bins for some of the land uses
+  canopy_counts_lu <- canopy_counts_lu %>%
+    mutate(canopy_c = scale(canopy_mid, center = TRUE, scale = FALSE))
+  
+  # interaction model
+  nb_lu_mod <- glm.nb(
+    n ~ canopy_mid * type_2018,
+    data = canopy_counts_lu
+  )
+  
+  summary(nb_lu_mod)
+  
+  # no interaction model
+  nb_no_interaction <- glm.nb(
+    n ~ canopy_mid + type_2018,
+    data = canopy_counts_lu
+  )
+  
+  # ANOVA to compare both
+  anova(nb_no_interaction, nb_lu_mod, test = "Chisq")
+  
+  # S4.2) Alternative: GAM
+  canopy_counts_lu$type_2018 <- as.factor(canopy_counts_lu$type_2018)
+  
+  gam_lu <- gam(
+    n ~ s(canopy_mid, by = type_2018) + type_2018,
+    family = nb(),
+    data = canopy_counts_lu,
+    method = "REML"
+  )
+  
+  summary(gam_lu)
+  
+  # S5) Results of negative binomial GLM for each land-use
+  # NOTE: This consequently to the previous ones doesn't work
+  by(canopy_counts_lu, canopy_counts_lu$type_2018, function(df) {
+    summary(glm.nb(n ~ canopy_c, data = df))
+  })
+  
+  
+  # S) Visualization
+  ggplot(canopy_counts_lu,
+         aes(x = canopy_mid, y = n, color = type_2018)) +
+    geom_point() +
+    geom_smooth(method = "glm.nb", se = TRUE) +
+    labs(
+      x = "Canopy cover (%)",
+      y = "Number of mapped social values",
+      color = "Land-use"
+    )
+}
+
+# Q3: Are there differences between social values?
+{
+  # S1) Global tests
+  {
+    kruskal.test(CanopyCover_mean ~ SV_new, data = CPH)
+    
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH)
+    
+    pairwise.wilcox.test(CPH$CanopyCover_mean, CPH$SV_new,  p.adjust.method = "BH") # or "bonferroni"
+    
+    boxplot(CanopyCover_mean ~ SV_new, data = CPH,
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+  }
+  
+  # S2) By Land-Use
+  {
+    # Forest
+    # Step 1) Exploratory Box-Plot
+    boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Forest"),
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+    
+    # Step 2) Kruskal-Wallis
+    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
+    
+    # Step 3) Kruskal effect size
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
+    
+    # Step 4) Pairwise Wilcox
+    pairwise.wilcox.test(
+      CPH_Forest$CanopyCover_mean,
+      CPH_Forest$SV_new,
+      p.adjust.method = "BH")
+    
+    # Greenspace
+    # Step 1) Exploratory Box-Plot
+    boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Greenspace"),
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+    
+    # Step 2) Kruskal-Wallis
+    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
+    
+    # Step 3) Kruskal effect size
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
+    
+    # Step 4) Pairwise Wilcox
+    pairwise.wilcox.test(
+      CPH_Greenspace$CanopyCover_mean,
+      CPH_Greenspace$SV_new,
+      p.adjust.method = "BH")
+    
+    # Other
+    # Step 1) Exploratory Box-Plot
+    boxplot(CanopyCover_mean ~ SV_new, data = CPH |> filter(type_2018 == "Other"),
+            xlab = "Social value category",
+            ylab = "Mean canopy cover (%)",
+            col = sv_cols)
+    
+    # Step 2) Kruskal-Wallis
+    kruskal.test(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
+    
+    # Step 3) Kruskal effect size
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
+    
+    # Step 4) Pairwise Wilcox
+    pairwise.wilcox.test(
+      CPH_Other$CanopyCover_mean,
+      CPH_Other$SV_new,
+      p.adjust.method = "BH")
+    
+    # Comparative plot
+    ggplot(CPH, aes(x = SV_new, y = CanopyCover_mean, fill = SV_new)) +
+      geom_boxplot(outlier.shape = 21, outlier.size = 2, alpha = 0.8) +  
+      facet_wrap(~type_2018) +
+      scale_fill_manual(values = sv_cols,
+                        labels = sv_labels) +                              
+      labs(
+        x = "Social values",
+        y = "Canopy Cover (%)",
+        fill = "Social value"
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(
+        strip.text = element_text(face = "bold"),                        
+        legend.position = "right"                                         
+      )
+  }
+}
+
 
 
