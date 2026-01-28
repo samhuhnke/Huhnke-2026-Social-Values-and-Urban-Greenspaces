@@ -26,6 +26,7 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 # 1) Load necessary packages
 # ============================================
 
+library(MASS) # for section 7) + load first otherwise it maskes select from dplyr
 library(tidyverse) # used for data handling
 library(ggplot2) # used for plotting
 library(rstatix) # used to assess effect sizes
@@ -35,6 +36,7 @@ library(sf)
 library(geojsonsf) # to read geojson variable
 library(spdep)
 library(coin)
+library(mgcv) # for section 7)
 
 # ============================================
 # 2) Load data
@@ -236,7 +238,6 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 
-
 # ============================================
 # 6) Social value data analysis
 # ============================================
@@ -361,7 +362,6 @@ rm("CPH_type_area", "HEL_type_area")
   pred <- ggpredict(LR_model, terms = "CanopyCover_mean")
   plot(pred)
 }
-
 
 
 # Correlations between SV and canopy cover divided by type =================
@@ -548,9 +548,6 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 
-
-
-
 # Step 6) Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
 
 
@@ -579,3 +576,126 @@ perm_test <- independence_test(
   distribution = approximate(nresample = 9999))  # updated argument
 
 perm_test
+
+
+
+
+# ============================================
+# 7) Multilayered analysis TEST
+# ============================================
+
+# Q1: Do mapped SV in general co-occur with canopy cover? -----------------
+
+# S2) - S7) with the inclusion of bin 2.5 (which includes 0s)
+{
+  # S1) binned data
+  HEL_binned <- HEL %>%
+    mutate(
+      canopy_bin = cut(
+        CanopyCover_mean,
+        breaks = seq(0, 100, by = 5),
+        include.lowest = TRUE,
+        labels = seq(2.5, 97.5, by = 5)
+      )
+    )
+  
+  # S2) counts of mapped points for each bin
+  canopy_counts <- HEL_binned %>%
+    count(canopy_bin) %>%
+    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+  
+  # S3) plot showing the relation
+  ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
+    geom_point() +
+    geom_smooth(method = "loess", se = TRUE) +
+    labs(
+      x = "Canopy cover (%)",
+      y = "Number of mapped social values",
+      title = "Frequency of mapped social values along canopy cover gradient"
+    )
+  
+  # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
+  pois_mod <- glm(
+    n ~ canopy_mid,
+    family = poisson(link = "log"),
+    data = canopy_counts
+  )
+  summary(pois_mod)
+  
+  exp(0.00164) # A 1% increase in canopy cover would lead to a 0.16% increase in counts of social values
+  
+  # S5) Check for dispersion
+  dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
+    df.residual(pois_mod)
+  
+  dispersion # dispersion 283.085 >> 2, so switch to negative binomial!
+  
+  # S6) Negative Binomial
+  nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
+  summary(nb_mod)
+  
+  exp(0.001379) # A 1% increase in canopy cover would lead to a 0.14% increase in counts of social values, BUT p = 0.777, i.e. non-significant
+  
+  # S7) Generalized Additive Model (GAM)
+  gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
+  summary(gam_mod)
+}
+
+# S2) - S7) without of bin 2.5 (which includes 0s)
+{
+  # S1) binned data
+  HEL_binned <- HEL %>%
+    mutate(
+      canopy_bin = cut(
+        CanopyCover_mean,
+        breaks = seq(0, 100, by = 5),
+        include.lowest = TRUE,
+        labels = seq(2.5, 97.5, by = 5)
+      )
+    )
+  
+  # S2) counts of mapped points for each 5% bin
+  canopy_counts <- HEL_binned %>%
+    count(canopy_bin) %>%
+    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+  
+  canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
+  
+  # S3) plot showing the relation
+  ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
+    geom_point() +
+    geom_smooth(method = "loess", se = TRUE) +
+    labs(
+      x = "Canopy cover (%)",
+      y = "Number of mapped social values",
+      title = "Frequency of mapped social values along canopy cover gradient"
+    )
+  
+  # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
+  pois_mod <- glm(
+    n ~ canopy_mid,
+    family = poisson(link = "log"),
+    data = canopy_counts
+  )
+  
+  summary(pois_mod)
+  
+  # S5) Check for dispersion
+  dispersion <- sum(residuals(pois_mod, type = "pearson")^2) /
+    df.residual(pois_mod)
+  dispersion # dispersion high so switch to negative binomial instead
+  
+  # S6) Negative Binomial
+  nb_mod <- glm.nb(n ~ canopy_mid, data = canopy_counts)
+  summary(nb_mod)
+  
+  # S7) Generalized Additive Model (GAM)
+  gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
+  summary(gam_mod)
+}
+
+# Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
+
+# 
+
+
