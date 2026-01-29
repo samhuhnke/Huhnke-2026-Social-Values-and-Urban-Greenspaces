@@ -190,7 +190,7 @@ Prepare data analysis. This section specifies color palettes and legend descript
 
 #### Section 5
 
-Exploratory analysis. This section contains histograms for the distribution of canopy cover on different levels and calculates the mapped point densities for each land-use type.
+Exploratory analysis. This section contains histograms for the distribution of canopy cover on different levels, calculations for mapped point densities for each land-use type, and pie charts for land-use.
 
 
 #### Section 6
