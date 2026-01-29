@@ -58,7 +58,7 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
 # ============================================
 # 3) Data Pre-Processing
 # NOTE: This section joins the area data with the PPGIS based on the code_2018 column.
-# NOTE: Further this section filters out any unneccessary columns for further analysis.
+# NOTE: Further this section filters out any unnecessary columns for further analysis.
 # ============================================
 
 # Helsinki
@@ -80,7 +80,11 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
     select(type_2018, area_km2) |> 
     group_by(type_2018) |> 
     unique() |> 
-    reframe(type_area_km2 = sum(area_km2, na.rm = T))
+    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
+    ungroup() |> 
+    reframe(type_2018 = type_2018,
+            type_area_km2 = type_area_km2,
+            type_area_per = type_area_km2/sum(type_area_km2)*100)
   
   # join type area into complete data set
   HEL <- HEL |> 
@@ -115,7 +119,11 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
     select(type_2018, area_km2) |> 
     group_by(type_2018) |> 
     unique() |> 
-    reframe(type_area_km2 = sum(area_km2, na.rm = T))
+    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
+    ungroup() |> 
+    reframe(type_2018 = type_2018,
+            type_area_km2 = type_area_km2,
+            type_area_per = type_area_km2/sum(type_area_km2)*100)
   
   # join type area into complete data set
   CPH <- CPH |> 
@@ -164,6 +172,13 @@ rm("CPH_type_area", "HEL_type_area")
     "7" = "7: Wetlands",
     "8" = "8: Waterbodies",
     "9" = "9: Natural open spaces"
+  )
+  
+  # Land Use types
+  lu_labels_3types <- c(
+    "1" = "1: Forest",
+    "2" = "2: Greenspace",
+    "3" = "3: Other"
   )
   
   # Social values
@@ -299,6 +314,54 @@ rm("CPH_type_area", "HEL_type_area")
     facet_wrap(~ SV_new)
   
 }
+
+# Pie Charts for the simplyfied land-use
+{
+  # load library
+  library(patchwork)
+  
+  # extract category and area percent
+  h1 <- HEL |> select(type_2018, type_area_per) |> unique()
+  c1 <- CPH |> select(type_2018, type_area_per) |> unique()
+  
+  # helsinki
+  p1 <- ggplot(h1, aes(x = "", y = type_area_per, fill = as.factor(type_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Helsinki LU",
+         subtitle = "200m buffered boundaries data") +
+    scale_fill_manual(
+      values = type_cols,
+      labels = lu_labels_3types,
+      name = "Land use"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # Copenhagen
+  p2 <- ggplot(c1, aes(x = "", y = type_area_per, fill = as.factor(type_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Copenhagen LU",
+         subtitle = "200m buffered boundaries data") +
+    scale_fill_manual(
+      values = type_cols,
+      labels = lu_labels_3types,
+      name = "Land use"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # patchwork
+  p1 + p2 + plot_layout(guides = "collect") &
+    theme(legend.position = "right")
+
+}
+
 
 # ============================================
 # 6) Non-spatial analysis 

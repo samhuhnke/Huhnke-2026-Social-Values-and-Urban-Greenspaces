@@ -41,7 +41,6 @@ CPH_raw <- read.csv("Copenhagen/COCARBON_CPH_PlaceInNature.csv", sep = ",") # Co
 colnames(HEL_raw)
 colnames(CPH_raw)
 
-
 # ============================================
 # 3) Data Cleaning
 # ============================================
@@ -148,7 +147,6 @@ HEL_no_NA <- HEL_raw |> filter(!is.na(SV_type))
   rm(list = c("CPH_SoVal_Other_Open", "CPH_SV_sf", "CPH_SV_coords"))
 }
 
-
 # ============================================
 # 4) Data Harmonization
 # ============================================
@@ -180,7 +178,6 @@ HEL_no_NA <- HEL_raw |> filter(!is.na(SV_type))
   rm("HEL_SV_reclassified")  
 }
 
-
 # -------------------------------------
 # 4.2) Copenhagen
 # -------------------------------------
@@ -207,7 +204,6 @@ HEL_no_NA <- HEL_raw |> filter(!is.na(SV_type))
   # 4.2c) remove temporary not needed data sets
   rm(list = "CPH_SV_reclassified")
 }
-
 
 # ============================================
 # 5) Data statistics
