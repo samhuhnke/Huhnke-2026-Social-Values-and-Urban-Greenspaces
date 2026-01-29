@@ -19,6 +19,12 @@ The urban canopy cover data can be downloaded from: https://wekeo.copernicus.eu/
 
 Instructions on how to download data: https://help.wekeo.eu/en/articles/6416936-how-to-download-wekeo-data 
 
+The administrative boundaries used to clip the data are derived from the National Land Survey (NLS) for Helsinki and the Digital Atlas of the Danish Historical-Administrative Geography (DigDag) and can be found under: 
+
+Helsinki: https://www.maanmittauslaitos.fi/en/maps-and-spatial-data/datasets-and-interfaces/product-descriptions/division-administrative-areas-vector
+
+Copenhagen: https://dataforsyningen.dk/data/3967 
+
 The Urban Atlas 2018 was used to identify different land-uses for both Copenhagen and Helsinki. The data and descriptions can be found under: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018 
 
 
@@ -36,6 +42,30 @@ If you have any questions about using the code, feel free to contact me. Please 
 This code is intended to harmonize the PPGIS data from Helsinki and Copenhagen. The original social values (13 for Helsinki, 17 for Copenhagen) are hereby reclassified into **8 new** (oftentimes broader) social value categories. Categories that could not sensibly be reclassified were omitted from the 8 new social value categories.
 
 The result of this code are two reclassified .csv-files! 
+
+#### Section 1
+
+Load necessary packages.
+
+#### Section 2
+
+Load raw data. The data is the CO-CARBON PPGIS survey data for Helsinki and Copenhagen.
+
+#### Section 3
+
+Data pre-processing. This section removes any NAs from both datasets and further re-arranges the format of the Copenhagen data to match that of the Helsinki data.
+
+#### Section 4
+
+Data hamronization. This section harmonizes both datasets by re-classifying the social value categories into categories that match both datasets. This process reduces the size of each dataset slightly. 
+
+#### Section 5
+
+Data analysis. This section quickly checks the data structure of each dataset. 
+
+#### Section 6
+
+Save data. 
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
@@ -101,16 +131,38 @@ NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces
 
 This code is intended to describe the land-uses for both Copenhagen and Helsinki as defined by the CLMS Urban Atlas 2018. This is done to enable later interpretation of the results as the prevalence of different land uses enables different uses by citizens. This code also includes a pie chart to visualize the different land uses prevalent.
 
+**IMPORTANT:** Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies.
+
+#### Section 1
+
+Load necessary packages. Only tidyverse.
+
+#### Section 2
+
+Load raw data. Data is derived from MT_02_QGIS.
+
+#### Section 3
+
+Data processing. This section reclassifies the initial Urban Atlas Data land-uses into new coarser categories and calculates the area for each.
+
 Steps taken in QGIS:
 1. Establish area for all land-use categories in QGIS using the *Open field calculator* and the command *$area*. This creates area estimates in m2 for each land-use polygon.
 2. Export the data as a .csv-file. 
-
-IMPORTANT: Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies (AT LEAST AS OF RIGHT NOW: 19.01.2026)
 
 Steps in R-Code:
 1. Create reclassification tables --> new classification based on overarching categories of the Urban Atlas 2018 + additional 9th category for natural open spaces without vegetation!
 2. Calculate total area per overarching category
 3. Create dataset that contains code_2018, category_2018, and area values
+
+#### Section 4
+
+Data saving. This section simply saves the reclassified data.
+
+#### Section 5
+
+Plotting. This section creates pie charts for each city showing the land-use accoring to the Urban Atlas 2018.
+
+**IMPORTANT:** Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies.
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
@@ -119,7 +171,30 @@ Steps in R-Code:
 
 This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
 
-Section 6: Multilayered analysis process
+#### Section 1
+
+Loads necessary packages. It is important to keep the order here, otherwise some libraries will mask each others commands which impacts the code. Alternatively, libraries can be selectively loaded when needed. This is not recommended for tidyverse and ggplot2.
+
+#### Section 2
+
+Load raw data. This section loads data output from previous MT_02_QGIS and MT_03_General_Area_Metrics.
+
+#### Section 3
+
+Pre-processes data. This section joins the 2 raw datasets for each city into 1 dataset for each city. It reclassifies land-use into a land-use type column called type_2018 which is used for later analysis. This section further calculates new land-use areas for each of these types and selects only relevant columns for the later analysis. Finally, it creates a subset of the data for each land-use type.
+
+#### Section 4
+
+Prepare data analysis. This section specifies color palettes and legend descriptions for the later analysis.
+
+#### Section 5
+
+Exploratory analysis. This section contains histograms for the distribution of canopy cover on different levels and calculates the mapped point densities for each land-use type.
+
+
+#### Section 6
+
+Non-spatial analysis. This section contains a progressively finer grained non-spatial analysis of the relationship between social values and canopy cover. For that it investigates these three questions:
 
 1. Do mapped SV in general co-occur with differing levels of canopy cover? This assesses all social values on a global level without any subsets.
 
@@ -136,5 +211,8 @@ A: For Copenhagen. Yes.
 A: For Helsinki. Yes.
 A: For Copenhagen. Yes.
 
+#### Section 7
+
+Spatial analysis. WIP.
 
 **Current: Assess spatial structure via spatial permutation**

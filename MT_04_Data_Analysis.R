@@ -28,16 +28,19 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 
 library(MASS) # for section 7) + load before dplyr
 library(mgcv) # for section 7) + load before nnet
+
 library(tidyverse) # used for data handling
 library(ggplot2) # used for plotting
+
 library(rstatix) # used to assess effect sizes
 library(nnet) # used for multinomial logistic regression
 library(ggeffects) # to visualize results of multinomial logistic regression
-library(sf)
+
+library(sf) # to use sf type files
 library(geojsonsf) # to read geojson variable
+
 library(spdep)
 library(coin)
-library(rstatix)
 
 # ============================================
 # 2) Load data
@@ -177,7 +180,7 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 # ============================================
-# 5) General data analysis and exploratory plots
+# 5) Exploratory Analysis (Point Counts & densities, histograms)
 # ============================================
 
 # Point count & point density per type (i.e. forest, greenspace, other) 
@@ -298,9 +301,8 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 # ============================================
-# 6) Multilayered analysis 
+# 6) Non-spatial analysis 
 # ============================================
-
 
 # Helsinki
 
@@ -1039,7 +1041,9 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 
-
+# ============================================
+# 7) Spatial analysis 
+# ============================================
 
 # Spatial Analysis: Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
 {

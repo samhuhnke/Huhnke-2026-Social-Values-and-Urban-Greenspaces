@@ -29,7 +29,7 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data/PPGIS Data")
 
 library(tidyverse)
 library(purrr) # for 5.2)
-library(sf)
+library(sf) # to work with sf files
 
 # ============================================
 # 2) Load data
