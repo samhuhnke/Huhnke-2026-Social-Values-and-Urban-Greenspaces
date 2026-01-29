@@ -175,7 +175,7 @@ rm("CPH_type_area", "HEL_type_area")
   )
   
   # Land Use types
-  lu_labels_3types <- c(
+  type_labels <- c(
     "1" = "1: Forest",
     "2" = "2: Greenspace",
     "3" = "3: Other"
@@ -201,11 +201,11 @@ rm("CPH_type_area", "HEL_type_area")
 # Point count & point density per type (i.e. forest, greenspace, other) 
 {
   HEL |> group_by(type_2018) |> count() |> 
-    left_join(HEL |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    left_join(HEL |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
     mutate(point_density_km2 = n/type_area_km2)
   
   CPH |> group_by(type_2018) |> count() |> 
-    left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    left_join(CPH |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
     mutate(point_density_km2 = n/type_area_km2)
 }
 
@@ -315,7 +315,7 @@ rm("CPH_type_area", "HEL_type_area")
   
 }
 
-# Pie Charts for the simplyfied land-use
+# Pie Charts for type-based land-use
 {
   # load library
   library(patchwork)
@@ -333,7 +333,7 @@ rm("CPH_type_area", "HEL_type_area")
          subtitle = "200m buffered boundaries data") +
     scale_fill_manual(
       values = type_cols,
-      labels = lu_labels_3types,
+      labels = type_labels,
       name = "Land use"
     ) +
     theme(
@@ -349,7 +349,7 @@ rm("CPH_type_area", "HEL_type_area")
          subtitle = "200m buffered boundaries data") +
     scale_fill_manual(
       values = type_cols,
-      labels = lu_labels_3types,
+      labels = type_labels,
       name = "Land use"
     ) +
     theme(
@@ -360,6 +360,61 @@ rm("CPH_type_area", "HEL_type_area")
   p1 + p2 + plot_layout(guides = "collect") &
     theme(legend.position = "right")
 
+}
+
+# Pie Charts for type-based point counts
+{
+  # load library
+  library(patchwork)
+  
+  # create point count data
+  HEL_points <- HEL |> group_by(type_2018) |> count() |> 
+    left_join(HEL |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  CPH_points <- CPH |> group_by(type_2018) |> count() |> 
+    left_join(CPH |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  # extract category and area percent
+  h1 <- HEL_points |> select(type_2018, n) |> unique()
+  c1 <- CPH_points |> select(type_2018, n) |> unique()
+  
+  # helsinki
+  p1 <- ggplot(h1, aes(x = "", y = n, fill = as.factor(type_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Helsinki Point Counts",
+         subtitle = "Absolute counts by land-use") +
+    scale_fill_manual(
+      values = type_cols,
+      labels = type_labels,
+      name = "Land use"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # Copenhagen
+  p2 <- ggplot(c1, aes(x = "", y = n, fill = as.factor(type_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Copenhagen Point Counts",
+         subtitle = "Absolute counts by land-use") +
+    scale_fill_manual(
+      values = type_cols,
+      labels = lu_labels_3types,
+      name = "Land use"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # patchwork
+  p1 + p2 + plot_layout(guides = "collect") &
+    theme(legend.position = "right")
 }
 
 
@@ -374,7 +429,7 @@ rm("CPH_type_area", "HEL_type_area")
   # S1) - S7) with the inclusion of bin 2.5 (which includes 0s)
   {
     # S1) binned data
-    HEL_binned <- HEL %>%
+    HEL_binned <- HEL |> 
       mutate(
         canopy_bin = cut(
           CanopyCover_mean,
@@ -385,8 +440,8 @@ rm("CPH_type_area", "HEL_type_area")
       )
     
     # S2) counts of mapped points for each bin
-    canopy_counts <- HEL_binned %>%
-      count(canopy_bin) %>%
+    canopy_counts <- HEL_binned |> 
+      count(canopy_bin) |> 
       mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
     
     # S3) plot showing the relation
@@ -396,7 +451,7 @@ rm("CPH_type_area", "HEL_type_area")
       labs(
         x = "Canopy cover (%)",
         y = "Number of mapped social values",
-        title = "Frequency of mapped social values along canopy cover gradient"
+        title = "Helsinki: Global frequency of mapped social values along canopy cover gradient"
       )
     
     # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
@@ -432,7 +487,7 @@ rm("CPH_type_area", "HEL_type_area")
   # S1) - S7) without of bin 2.5 (which includes 0s)
   {
     # S1) binned data
-    HEL_binned <- HEL %>%
+    HEL_binned <- HEL |> 
       mutate(
         canopy_bin = cut(
           CanopyCover_mean,
@@ -443,8 +498,8 @@ rm("CPH_type_area", "HEL_type_area")
       )
     
     # S2) counts of mapped points for each 5% bin
-    canopy_counts <- HEL_binned %>%
-      count(canopy_bin) %>%
+    canopy_counts <- HEL_binned |> 
+      count(canopy_bin) |> 
       mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
     
     canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
@@ -486,7 +541,7 @@ rm("CPH_type_area", "HEL_type_area")
 # Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
 {
   # S1) Binned data
-  HEL_binned <- HEL %>%
+  HEL_binned <- HEL |> 
     mutate(
       canopy_bin = cut(
         CanopyCover_mean,
@@ -497,9 +552,9 @@ rm("CPH_type_area", "HEL_type_area")
     )
   
   # S2) canopy counts by land-use
-  canopy_counts_lu <- HEL_binned %>%
-    group_by(type_2018, canopy_bin) %>%
-    summarise(n = n(), .groups = "drop") %>%
+  canopy_counts_lu <- HEL_binned |> 
+    group_by(type_2018, canopy_bin) |> 
+    summarise(n = n(), .groups = "drop") |> 
     mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
   
   # S3) GLMS - Question: Does land-use have a significant impact on the relation?
@@ -522,7 +577,7 @@ rm("CPH_type_area", "HEL_type_area")
   anova(nb_no_interaction, nb_lu_mod, test = "Chisq") 
   
   # S4) center canopy counts + re-run models
-  canopy_counts_lu <- canopy_counts_lu %>%
+  canopy_counts_lu <- canopy_counts_lu |> 
     mutate(canopy_c = scale(canopy_mid, center = TRUE, scale = FALSE))
   
   # interaction model
@@ -539,7 +594,7 @@ rm("CPH_type_area", "HEL_type_area")
     data = canopy_counts_lu
   )
   
-  # ANOVE to compare both
+  # ANOVA to compare both
   # NOTE: no interaction model still doesn't converge
   # RESULTS: interaction significantly improves model perfomance (LR = 90.94), df = 2 (for greenspace and other, with forest as baseline), P = 0
   # RESULTS: Land-uses differ relationship between social value count and canopy cover
@@ -569,16 +624,20 @@ rm("CPH_type_area", "HEL_type_area")
   -(1 - exp(-0.04206))
   
   
-  # S) Visualization
+  # S6) Visualization
   ggplot(canopy_counts_lu,
          aes(x = canopy_mid, y = n, color = type_2018)) +
     geom_point() +
     geom_smooth(method = "glm.nb", se = TRUE) +
+    scale_color_manual(values = type_cols,
+                       labels = type_labels) +
     labs(
       x = "Canopy cover (%)",
       y = "Number of mapped social values",
-      color = "Land-use"
-    )
+      color = "Land-use",
+      title = "Helsinki: Mapped social values by land-use"
+    ) +
+    theme_minimal()
 }
 
 # Q3: Are there differences between social values?
@@ -591,11 +650,10 @@ rm("CPH_type_area", "HEL_type_area")
     
     pairwise.wilcox.test(HEL$CanopyCover_mean, HEL$SV_new,  p.adjust.method = "BH") # or "bonferroni"
     
-    wilcox_effsize()
-    
     boxplot(CanopyCover_mean ~ SV_new, data = HEL,
             xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
+            ylab = "Canopy cover (%)",
+            main = "Helsinki",
             col = sv_cols)
   }
   
@@ -746,7 +804,7 @@ rm("CPH_type_area", "HEL_type_area")
   # S1) - S7) with the inclusion of bin 2.5 (which includes 0s)
   {
     # S1) binned data
-    CPH_binned <- CPH %>%
+    CPH_binned <- CPH |> 
       mutate(
         canopy_bin = cut(
           CanopyCover_mean,
@@ -757,9 +815,10 @@ rm("CPH_type_area", "HEL_type_area")
       )
     
     # S2) counts of mapped points for each bin
-    canopy_counts <- CPH_binned %>%
-      count(canopy_bin) %>%
-      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+    canopy_counts <- CPH_binned |> 
+      count(canopy_bin |> 
+              mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+      )
     
     # S3) plot showing the relation
     ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
@@ -768,7 +827,7 @@ rm("CPH_type_area", "HEL_type_area")
       labs(
         x = "Canopy cover (%)",
         y = "Number of mapped social values",
-        title = "Frequency of mapped social values along canopy cover gradient"
+        title = "Copenhagen: Global frequency of mapped social values along canopy cover gradient"
       )
     
     # S4) Poisson Regression - Assumes: Var(n) = Mean(n)
@@ -803,7 +862,7 @@ rm("CPH_type_area", "HEL_type_area")
   # S1) - S7) without of bin 2.5 (which includes 0s)
   {
     # S1) binned data
-    CPH_binned <- CPH %>%
+    CPH_binned <- CPH |> 
       mutate(
         canopy_bin = cut(
           CanopyCover_mean,
@@ -814,9 +873,10 @@ rm("CPH_type_area", "HEL_type_area")
       )
     
     # S2) counts of mapped points for each 5% bin
-    canopy_counts <- CPH_binned %>%
-      count(canopy_bin) %>%
-      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+    canopy_counts <- CPH_binned |> 
+      count(canopy_bin |> 
+              mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+      )
     
     canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
     
@@ -855,11 +915,11 @@ rm("CPH_type_area", "HEL_type_area")
     plot(gam_mod, rug = TRUE)
   }
 }
-
+  
 # Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
 {
   # S1) Binned data
-  CPH_binned <- CPH %>%
+  CPH_binned <- CPH |> 
     mutate(
       canopy_bin = cut(
         CanopyCover_mean,
@@ -870,9 +930,9 @@ rm("CPH_type_area", "HEL_type_area")
     )
   
   # S2) canopy counts by land-use
-  canopy_counts_lu <- CPH_binned %>%
-    group_by(type_2018, canopy_bin) %>%
-    summarise(n = n(), .groups = "drop") %>%
+  canopy_counts_lu <- CPH_binned |> 
+    group_by(type_2018, canopy_bin) |> 
+    summarise(n = n(), .groups = "drop") |> 
     mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
   
   
@@ -896,7 +956,7 @@ rm("CPH_type_area", "HEL_type_area")
   
   # S4) center canopy counts + re-run models
   # NOTE: This does not work, probably because there is too many missing bins for some of the land uses
-  canopy_counts_lu <- canopy_counts_lu %>%
+  canopy_counts_lu <- canopy_counts_lu |> 
     mutate(canopy_c = scale(canopy_mid, center = TRUE, scale = FALSE))
   
   # interaction model
@@ -935,16 +995,20 @@ rm("CPH_type_area", "HEL_type_area")
   })
   
   
-  # S) Visualization
+  # S6) Visualization
   ggplot(canopy_counts_lu,
          aes(x = canopy_mid, y = n, color = type_2018)) +
     geom_point() +
     geom_smooth(method = "glm.nb", se = TRUE) +
+    scale_color_manual(values = type_cols,
+                       labels = type_labels) +
     labs(
       x = "Canopy cover (%)",
       y = "Number of mapped social values",
-      color = "Land-use"
-    )
+      color = "Land-use",
+      title = "Copenhagen: Mapped social values by land-use"
+    ) +
+    theme_minimal()
 }
 
 # Q3: Are there differences between social values?
@@ -959,7 +1023,8 @@ rm("CPH_type_area", "HEL_type_area")
     
     boxplot(CanopyCover_mean ~ SV_new, data = CPH,
             xlab = "Social value category",
-            ylab = "Mean canopy cover (%)",
+            ylab = "Canopy cover (%)",
+            main = "Copenhagen",
             col = sv_cols)
   }
   
