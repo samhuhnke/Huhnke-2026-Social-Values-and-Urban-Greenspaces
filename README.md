@@ -10,6 +10,7 @@ This work was produced has part of a Master's Thesis at the University of Helsin
 
 This repository contains the code used for the analysis of relations between social values and urban canopy cover. The social value data was established through a PPGIS survey as part of the *Co-Carbon project*. The specific data contains information on Copenhagen, DK, and Helsinki, FI. The urban canopy cover data is publically available data from the *Copernicus Landuse Monitoring*. 
 
+If you have any questions about using the code, feel free to contact me. Please note, that I myself am **NOT ENTITLED** to provide access to the PPGIS data.
 
 ## DATA ACCESSIBILITY
 
@@ -32,7 +33,7 @@ The Urban Atlas 2018 was used to identify different land-uses for both Copenhage
 
 Each code has a number assigned to it. This number indicates the order in which the codes are designed to run. It is important to note that each individual code leads to outputs necessary for the next code. Hence it is important to run each code in sequence and to properly store and access each created data subset.
 
-If you have any questions about using the code, feel free to contact me. Please note, that I myself am **NOT ENTITLED** to provide access to the PPGIS data.
+NOTE: This code uses many {}. This is purely done for convenience to structure the code while writing it. 
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
