@@ -16,13 +16,12 @@ If you have any questions about using the code, feel free to contact me. Please 
 
 The PPGIS social value data is not publically available and can only be accessed after prior agreement with the *Co-Carbon project*, the *University of Copenhagen*, and the *University of Helsinki* (or official and entitled representatives of each entity). 
 
-The urban canopy cover data can be downloaded from: https://wekeo.copernicus.eu/ 
+The urban canopy cover data can be downloaded from: https://land.copernicus.eu/en/products/high-resolution-layer-forests-and-tree-cover  
 
-Instructions on how to download data: https://help.wekeo.eu/en/articles/6416936-how-to-download-wekeo-data 
 
-The administrative boundaries used to clip the data are derived from the National Land Survey (NLS) for Helsinki and the Digital Atlas of the Danish Historical-Administrative Geography (DigDag) and can be found under: 
+The administrative boundaries used to clip the data are derived from the National Land Survey (NLS) for Helsinki, 2025, and the Digital Atlas of the Danish Historical-Administrative Geography (DigDag) and can be found under: 
 
-Helsinki: https://www.maanmittauslaitos.fi/en/maps-and-spatial-data/datasets-and-interfaces/product-descriptions/division-administrative-areas-vector
+Helsinki: https://www.maanmittauslaitos.fi/en/maps-and-spatial-data/datasets-and-interfaces/product-descriptions/division-administrative-areas-vector 
 
 Copenhagen: https://dataforsyningen.dk/data/3967 
 
@@ -72,6 +71,10 @@ Save data.
 -----------------------------------------------------------------------------------------------------
 
 ### MT_02_QGIS - WIP
+
+#### CLMS tree cover density Pre-Processing
+1. Combine CLMS data packages for Helsinki into one dataset
+2. WIP
 
 #### Helsinki Pre-Processing
 1. Gathering of CLM canopy cover data for Helsinki and NLS administrative boundaries and water bodies data
