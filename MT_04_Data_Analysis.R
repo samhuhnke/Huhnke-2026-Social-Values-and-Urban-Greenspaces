@@ -49,11 +49,12 @@ library(coin)
 # Helsinki
 HEL_raw <- read.csv("CSVs/Helsinki_SV_50mCC_LU.csv", sep = ",")
 HEL_areas <- read.csv("CSVs/Helsinki_LU_Areas.csv", sep = ",")
-
+HEL_areas_200m <- read.csv("CSVs/Helsinki_LU_Areas_200m.csv", sep = ",")
 
 # Copenhagen
 CPH_raw <- read.csv("CSVs/Copenhagen_SV_50mCC_LU.csv", sep = ",")
 CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
+CPH_areas_200m <- read.csv("CSVs/Copenhagen_LU_Areas_200m.csv", sep = ",")
 
 # ============================================
 # 3) Data Pre-Processing
@@ -142,6 +143,86 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
 rm("CPH_type_area", "HEL_type_area")
 
 
+# Helsinki - 200m buffered
+{
+  HEL_200m <- HEL_raw |> 
+    # add area data
+    left_join(HEL_areas_200m, by = "code_2018") |> 
+    # select relevant variables
+    select(geojson, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    # rename canopy cover variable 
+    rename(CanopyCover_mean = X_mean) |> 
+    # further simplify classes into Greenspace, Forest, and Other
+    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
+                                 category_2018 == 6 ~ "Forest",
+                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
+  
+  # calculate area per type
+  HEL_type_area <- HEL_200m |> 
+    select(type_2018, area_km2) |> 
+    group_by(type_2018) |> 
+    unique() |> 
+    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
+    ungroup() |> 
+    reframe(type_2018 = type_2018,
+            type_area_km2 = type_area_km2,
+            type_area_per = type_area_km2/sum(type_area_km2)*100)
+  
+  # join type area into complete data set
+  HEL_200m <- HEL_200m |> 
+    left_join(HEL_type_area, by = "type_2018")
+  
+  # Turn SV_new into categorical value (or factor in R)
+  HEL_200m$SV_new <- factor(HEL_200m$SV_new)
+  
+  # Create subsets
+  HEL_Forest_200m <- HEL_200m |> filter(type_2018 == "Forest")
+  HEL_Greenspace_200m <- HEL_200m |> filter(type_2018 == "Greenspace")
+  HEL_Other_200m <- HEL_200m |> filter(type_2018 == "Other")
+  
+}
+
+# Copenhagen - 200m buffered
+{
+  CPH_200m <- CPH_raw |> 
+    # add area data
+    left_join(CPH_areas_200m, by = "code_2018") |> 
+    # select relevant variables
+    select(GeoJSON, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    # rename canopy cover variable 
+    rename(CanopyCover_mean = X_mean) |> 
+    # further simplify classes into Greenspace, Forest, and Other
+    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
+                                 category_2018 == 6 ~ "Forest",
+                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
+  
+  # calculate area per type
+  CPH_type_area <- CPH_200m |> 
+    select(type_2018, area_km2) |> 
+    group_by(type_2018) |> 
+    unique() |> 
+    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
+    ungroup() |> 
+    reframe(type_2018 = type_2018,
+            type_area_km2 = type_area_km2,
+            type_area_per = type_area_km2/sum(type_area_km2)*100)
+  
+  # join type area into complete data set
+  CPH_200m <- CPH_200m |> 
+    left_join(CPH_type_area, by = "type_2018")
+  
+  # Turn SV_new into categorical value (or factor in R)
+  CPH_200m$SV_new <- factor(CPH_200m$SV_new)
+  
+  # Create subsets
+  CPH_Forest_200m <- CPH_200m |> filter(type_2018 == "Forest")
+  CPH_Greenspace_200m <- CPH_200m |> filter(type_2018 == "Greenspace")
+  CPH_Other_200m <- CPH_200m |> filter(type_2018 == "Other")
+}
+
+# remove temporary layers
+rm("CPH_type_area", "HEL_type_area")
+
 # ============================================
 # 4) Analysis Preparation
 # ============================================
@@ -164,7 +245,7 @@ rm("CPH_type_area", "HEL_type_area")
   # Land Use categories
   lu_labels <- c(
     "1" = "1: Urban fabric",
-    "2" = "2: Industrial, commercial, transport",
+    "2" = "2: Industrial, Commercial, Public,\n Military, Private and Transport Units",
     "3" = "3: Mine, dump, construction",
     "4" = "4: Artificial green spaces",
     "5" = "5: Agricultural land",
@@ -217,7 +298,7 @@ rm("CPH_type_area", "HEL_type_area")
   summary_table
 }
 
-# Point count & point density per type (i.e. forest, greenspace, other) 
+# Point count & point density per type (i.e. forest, greenspace, other)
 {
   HEL |> group_by(type_2018) |> count() |> 
     left_join(HEL |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
@@ -225,6 +306,14 @@ rm("CPH_type_area", "HEL_type_area")
   
   CPH |> group_by(type_2018) |> count() |> 
     left_join(CPH |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  HEL_200m |> group_by(type_2018) |> count() |> 
+    left_join(HEL_200m |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  CPH_200m |> group_by(type_2018) |> count() |> 
+    left_join(CPH_200m |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
     mutate(point_density_km2 = n/type_area_km2)
 }
 
@@ -237,6 +326,16 @@ rm("CPH_type_area", "HEL_type_area")
   
   CPH |> group_by(type_2018, SV_new) |> count() |> 
     left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2) |> 
+    print(n = 25)
+  
+  HEL_200m |> group_by(type_2018, SV_new) |> count() |> 
+    left_join(HEL_200m |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2) |> 
+    print(n = 25)
+  
+  CPH_200m |> group_by(type_2018, SV_new) |> count() |> 
+    left_join(CPH_200m |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
     mutate(point_density_km2 = n/type_area_km2) |> 
     print(n = 25)
 }
@@ -350,7 +449,7 @@ rm("CPH_type_area", "HEL_type_area")
     coord_polar("y") +
     theme_void() +
     labs(title = "Copenhagen LU",
-         subtitle = "200m buffered boundaries data") +
+         subtitle = "non-buffered boundaries data") +
     scale_fill_manual(
       values = type_cols,
       labels = type_labels,
@@ -366,7 +465,7 @@ rm("CPH_type_area", "HEL_type_area")
     coord_polar("y") +
     theme_void() +
     labs(title = "Helsinki LU",
-         subtitle = "200m buffered boundaries data") +
+         subtitle = "non-buffered boundaries data") +
     scale_fill_manual(
       values = type_cols,
       labels = type_labels,
@@ -425,7 +524,7 @@ rm("CPH_type_area", "HEL_type_area")
          subtitle = "Absolute counts by land-use") +
     scale_fill_manual(
       values = type_cols,
-      labels = lu_labels_3types,
+      labels = type_labels,
       name = "Land use"
     ) +
     theme(

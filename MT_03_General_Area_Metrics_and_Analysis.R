@@ -388,11 +388,12 @@ library(ggplot2)
 library(patchwork)
 
 # Combined Pie Chart
-# NOTE: These pie charts show data for the 200m buffered administrative boundary!
+# NOTE: These pie charts show data for the administrative boundary!
 {
   # extract category and area percent
-  h1 <- HEL_LU_final |> select(category_2018, area_percent) |> unique()
   c1 <- CPH_LU_final |> select(category_2018, area_percent) |> unique()
+  h1 <- HEL_LU_final |> select(category_2018, area_percent) |> unique()
+  
   
   # define colors
   cols <- c("#bf0000", "#959595", "#734d37", "#8cdc00", "#ffffa8", "#008c00", "#a6a6ff", "#80f2e6","#ccffcc")
@@ -400,39 +401,23 @@ library(patchwork)
   # define labels
   lu_labels <- c(
     "1" = "1: Urban fabric",
-    "2" = "2: Industrial, commercial, transport",
+    "2" = "2: Industrial, Commercial, Public, \nMilitary, Private and Transport Units",
     "3" = "3: Mine, dump, construction",
-    "4" = "4: Artificial green spaces",
+    "4" = "4: Artificial Non-Agricultural \nVegetated Areas",
     "5" = "5: Agricultural land",
     "6" = "6: Semi-/Natural green spaces",
     "7" = "7: Wetlands",
     "8" = "8: Waterbodies",
-    "9" = "9: Natural open spaces"
+    "9" = "9: Open spaces with little or \nno vegetation"
   )
   
-  # helsinki
-  p1 <- ggplot(h1, aes(x = "", y = area_percent, fill = as.factor(category_2018))) +
-    geom_col(width = 1, color = "black", linewidth = 0.4) +
-    coord_polar("y") +
-    theme_void() +
-    labs(title = "Helsinki LU",
-         subtitle = "200m buffered boundaries data") +
-    scale_fill_manual(
-      values = cols,
-      labels = lu_labels,
-      name = "Land use"
-    ) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold"),
-      plot.subtitle = element_text(hjust = 0.5, size = 8))
-  
   # copenhagen
-  p2 <- ggplot(c1, aes(x = "", y = area_percent, fill = as.factor(category_2018))) +
+  p1 <- ggplot(c1, aes(x = "", y = area_percent, fill = as.factor(category_2018))) +
     geom_col(width = 1, color = "black", linewidth = 0.4) +
     coord_polar("y") +
     theme_void() +
     labs(title = "Copenhagen LU",
-         subtitle = "200m buffered boundaries data") +
+         subtitle = "non-buffered boundaries data") +
     scale_fill_manual(
       values = cols,
       labels = lu_labels,
@@ -442,6 +427,24 @@ library(patchwork)
     theme(
       plot.title = element_text(hjust = 0.5, face = "bold"),
       plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  # helsinki
+  p2 <- ggplot(h1, aes(x = "", y = area_percent, fill = as.factor(category_2018))) +
+    geom_col(width = 1, color = "black", linewidth = 0.4) +
+    coord_polar("y") +
+    theme_void() +
+    labs(title = "Helsinki LU",
+         subtitle = "non-boundaries data") +
+    scale_fill_manual(
+      values = cols,
+      labels = lu_labels,
+      name = "Land use"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 8))
+  
+  
   
   # patchwork
   p1 + p2 + plot_layout(guides = "collect") &
