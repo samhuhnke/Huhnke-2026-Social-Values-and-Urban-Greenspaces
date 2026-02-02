@@ -198,6 +198,25 @@ rm("CPH_type_area", "HEL_type_area")
 # 5) Exploratory Analysis (Point Counts & densities, histograms)
 # ============================================
 
+# Number of respondents per survey
+{
+  summary_table <- tibble(
+    City = c("Helsinki", "Copenhagen"),
+    # Number of total individual repsondents
+    Total_Respond = c(
+      HEL |> distinct(Respondent) |> nrow(),
+      CPH |> distinct(Respondent) |> nrow()
+    ),
+    Mapped_SVs = c(
+      HEL |> nrow(),
+      CPH |> nrow()
+    )
+  )
+  
+  # View it
+  summary_table
+}
+
 # Point count & point density per type (i.e. forest, greenspace, other) 
 {
   HEL |> group_by(type_2018) |> count() |> 
@@ -321,15 +340,16 @@ rm("CPH_type_area", "HEL_type_area")
   library(patchwork)
   
   # extract category and area percent
-  h1 <- HEL |> select(type_2018, type_area_per) |> unique()
   c1 <- CPH |> select(type_2018, type_area_per) |> unique()
+  h1 <- HEL |> select(type_2018, type_area_per) |> unique()
   
-  # helsinki
-  p1 <- ggplot(h1, aes(x = "", y = type_area_per, fill = as.factor(type_2018))) +
+  
+  # Copenhagen
+  p1 <- ggplot(c1, aes(x = "", y = type_area_per, fill = as.factor(type_2018))) +
     geom_col(width = 1, color = "black", linewidth = 0.4) +
     coord_polar("y") +
     theme_void() +
-    labs(title = "Helsinki LU",
+    labs(title = "Copenhagen LU",
          subtitle = "200m buffered boundaries data") +
     scale_fill_manual(
       values = type_cols,
@@ -340,12 +360,12 @@ rm("CPH_type_area", "HEL_type_area")
       plot.title = element_text(hjust = 0.5, face = "bold"),
       plot.subtitle = element_text(hjust = 0.5, size = 8))
   
-  # Copenhagen
-  p2 <- ggplot(c1, aes(x = "", y = type_area_per, fill = as.factor(type_2018))) +
+  # helsinki
+  p2 <- ggplot(h1, aes(x = "", y = type_area_per, fill = as.factor(type_2018))) +
     geom_col(width = 1, color = "black", linewidth = 0.4) +
     coord_polar("y") +
     theme_void() +
-    labs(title = "Copenhagen LU",
+    labs(title = "Helsinki LU",
          subtitle = "200m buffered boundaries data") +
     scale_fill_manual(
       values = type_cols,
