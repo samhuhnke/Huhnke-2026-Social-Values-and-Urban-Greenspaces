@@ -92,8 +92,8 @@ Save data.
 To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
 
 1. Download data and add to the QGIS
-2. Clip Urban Atlas landcover data to the extent of the 200m-buffered administrative boundary
-3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
+2. Clip Urban Atlas landcover data to the extent of the non-buffered and the 200m-buffered administrative boundary
+3. Spatial join PPGIS and Urban Atlas buffered landcover data by using "join attributes by location --> are within --> one-to-one"
 
 NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces 107 unmatched points with *code_2018 = NA*. Most of theses unmatched points are in the water, where there is no Urban Atlas data. Some amount of points are within the Viikki Bay area.
 
@@ -117,8 +117,8 @@ NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces
 To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The data can be downloaded at: https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2018#download
 
 1. Download data and add to the QGIS
-2. Clip Urban Atlas Land Cover data to the extent of the 200m-buffered administrative boundary
-3. Spatial join PPGIS and Urban Atlas landcover data by using "join attributes by location --> are within --> one-to-one"
+2. Clip Urban Atlas landcover data to the extent of the non-buffered and the 200m-buffered administrative boundary
+3. Spatial join PPGIS and Urban Atlas buffered landcover data by using "join attributes by location --> are within --> one-to-one"
 
 NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces 6 unmatched points with *code_2018 = NA*. All of these points are located on two islands off the coast, both of which still fall within the administrative area of Copenhagen.
 
@@ -135,7 +135,7 @@ NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces
 
 This code is intended to describe the land-uses for both Copenhagen and Helsinki as defined by the CLMS Urban Atlas 2018. This is done to enable later interpretation of the results as the prevalence of different land uses enables different uses by citizens. This code also includes a pie chart to visualize the different land uses prevalent.
 
-**IMPORTANT:** Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies.
+**IMPORTANT:** Note that the Urban Atlas 2018 data was clipped to the extend of the non-buffered and the 200m-buffered administrative boundaries! The total area for the buffered area is 10-20% bigger than the pure administrative boundary and includes water bodies.
 
 #### Section 1
 
@@ -166,7 +166,7 @@ Data saving. This section simply saves the reclassified data.
 
 Plotting. This section creates pie charts for each city showing the land-use accoring to the Urban Atlas 2018.
 
-**IMPORTANT:** Note that the Urban Atlas 2018 data was clipped to the extend of the 200m-buffered administrative boundaries! The total area is hence 10-20% bigger than the pure administrative boundary and includes water bodies.
+**REMINDER:** Note that the Urban Atlas 2018 data was clipped to the extend of the non-buffered and the 200m-buffered administrative boundaries! The total area for the buffered area is 10-20% bigger than the pure administrative boundary and includes water bodies.
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
