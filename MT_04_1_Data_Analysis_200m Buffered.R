@@ -1,5 +1,5 @@
 # ============================================ 
-# MT_04_Data_Analysis
+# MT_04.1_Data_Analysis_200m Buffered
 # ============================================
 
 # AUTHOR: Sam Huhnke, M.Sc. University of Helsinki
@@ -31,7 +31,6 @@ library(mgcv) # for section 7) + load before nnet
 
 library(tidyverse) # used for data handling
 library(ggplot2) # used for plotting
-library(ggpubr) # used for plotting Dunn's test results
 
 library(rstatix) # used to assess effect sizes
 library(nnet) # used for multinomial logistic regression
@@ -50,10 +49,12 @@ library(coin)
 # Helsinki
 HEL_raw <- read.csv("CSVs/Helsinki_SV_50mCC_LU.csv", sep = ",")
 HEL_areas <- read.csv("CSVs/Helsinki_LU_Areas.csv", sep = ",")
+HEL_areas_200m <- read.csv("CSVs/Helsinki_LU_Areas_200m.csv", sep = ",")
 
 # Copenhagen
 CPH_raw <- read.csv("CSVs/Copenhagen_SV_50mCC_LU.csv", sep = ",")
 CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
+CPH_areas_200m <- read.csv("CSVs/Copenhagen_LU_Areas_200m.csv", sep = ",")
 
 # ============================================
 # 3) Data Pre-Processing
@@ -97,7 +98,7 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
   HEL_Forest <- HEL |> filter(type_2018 == "Forest")
   HEL_Greenspace <- HEL |> filter(type_2018 == "Greenspace")
   HEL_Other <- HEL |> filter(type_2018 == "Other")
-
+  
 }
 
 # Copenhagen
@@ -141,6 +142,86 @@ CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
 # remove temporary layers
 rm("CPH_type_area", "HEL_type_area")
 
+
+# Helsinki - 200m buffered 
+{
+  HEL_200m <- HEL_raw |> 
+    # add area data
+    left_join(HEL_areas_200m, by = "code_2018") |> 
+    # select relevant variables
+    select(geojson, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    # rename canopy cover variable 
+    rename(CanopyCover_mean = X_mean) |> 
+    # further simplify classes into Greenspace, Forest, and Other
+    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
+                                 category_2018 == 6 ~ "Forest",
+                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
+  
+  # calculate area per type
+  HEL_type_area <- HEL_200m |> 
+    select(type_2018, area_km2) |> 
+    group_by(type_2018) |> 
+    unique() |> 
+    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
+    ungroup() |> 
+    reframe(type_2018 = type_2018,
+            type_area_km2 = type_area_km2,
+            type_area_per = type_area_km2/sum(type_area_km2)*100)
+  
+  # join type area into complete data set
+  HEL_200m <- HEL_200m |> 
+    left_join(HEL_type_area, by = "type_2018")
+  
+  # Turn SV_new into categorical value (or factor in R)
+  HEL_200m$SV_new <- factor(HEL_200m$SV_new)
+  
+  # Create subsets
+  HEL_Forest_200m <- HEL_200m |> filter(type_2018 == "Forest")
+  HEL_Greenspace_200m <- HEL_200m |> filter(type_2018 == "Greenspace")
+  HEL_Other_200m <- HEL_200m |> filter(type_2018 == "Other")
+  
+}
+
+# Copenhagen - 200m buffered
+{
+  CPH_200m <- CPH_raw |> 
+    # add area data
+    left_join(CPH_areas_200m, by = "code_2018") |> 
+    # select relevant variables
+    select(GeoJSON, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
+    # rename canopy cover variable 
+    rename(CanopyCover_mean = X_mean) |> 
+    # further simplify classes into Greenspace, Forest, and Other
+    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
+                                 category_2018 == 6 ~ "Forest",
+                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
+  
+  # calculate area per type
+  CPH_type_area <- CPH_200m |> 
+    select(type_2018, area_km2) |> 
+    group_by(type_2018) |> 
+    unique() |> 
+    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
+    ungroup() |> 
+    reframe(type_2018 = type_2018,
+            type_area_km2 = type_area_km2,
+            type_area_per = type_area_km2/sum(type_area_km2)*100)
+  
+  # join type area into complete data set
+  CPH_200m <- CPH_200m |> 
+    left_join(CPH_type_area, by = "type_2018")
+  
+  # Turn SV_new into categorical value (or factor in R)
+  CPH_200m$SV_new <- factor(CPH_200m$SV_new)
+  
+  # Create subsets
+  CPH_Forest_200m <- CPH_200m |> filter(type_2018 == "Forest")
+  CPH_Greenspace_200m <- CPH_200m |> filter(type_2018 == "Greenspace")
+  CPH_Other_200m <- CPH_200m |> filter(type_2018 == "Other")
+}
+
+# remove temporary layers
+#rm("CPH_type_area", "HEL_type_area")
 
 # ============================================
 # 4) Analysis Preparation
@@ -217,12 +298,6 @@ rm("CPH_type_area", "HEL_type_area")
   summary_table
 }
 
-# Area sizes
-{
-  HEL |> select(type_area_km2) |> distinct() |> sum()
-  CPH |> select(type_area_km2) |> distinct() |> sum()
-}
-
 # Point count & point density per type (i.e. forest, greenspace, other)
 {
   HEL |> group_by(type_2018) |> count() |> 
@@ -231,6 +306,14 @@ rm("CPH_type_area", "HEL_type_area")
   
   CPH |> group_by(type_2018) |> count() |> 
     left_join(CPH |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  HEL_200m |> group_by(type_2018) |> count() |> 
+    left_join(HEL_200m |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2)
+  
+  CPH_200m |> group_by(type_2018) |> count() |> 
+    left_join(CPH_200m |> select(type_2018, type_area_km2, type_area_per) |> unique(), by = "type_2018") |> 
     mutate(point_density_km2 = n/type_area_km2)
 }
 
@@ -243,6 +326,16 @@ rm("CPH_type_area", "HEL_type_area")
   
   CPH |> group_by(type_2018, SV_new) |> count() |> 
     left_join(CPH |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2) |> 
+    print(n = 25)
+  
+  HEL_200m |> group_by(type_2018, SV_new) |> count() |> 
+    left_join(HEL_200m |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
+    mutate(point_density_km2 = n/type_area_km2) |> 
+    print(n = 25)
+  
+  CPH_200m |> group_by(type_2018, SV_new) |> count() |> 
+    left_join(CPH_200m |> select(type_2018, type_area_km2) |> unique(), by = "type_2018") |> 
     mutate(point_density_km2 = n/type_area_km2) |> 
     print(n = 25)
 }
@@ -385,7 +478,7 @@ rm("CPH_type_area", "HEL_type_area")
   # patchwork
   p1 + p2 + plot_layout(guides = "collect") &
     theme(legend.position = "right")
-
+  
 }
 
 # Pie Charts for type-based point counts
@@ -504,13 +597,13 @@ rm("CPH_type_area", "HEL_type_area")
     
     # S7) Generalized Additive Model (GAM)
     gam_mod <- gam(n ~ s(canopy_mid), family = nb(), data = canopy_counts)
-    summary(gam_mod) #edf = 2.816 --> U-shaped
+    summary(gam_mod)
     
     plot(gam_mod, rug = TRUE)
     
   }
   
-  # S1) - S7) without bin 2.5 (which includes 0s)
+  # S1) - S7) without of bin 2.5 (which includes 0s)
   {
     # S1) binned data
     HEL_binned <- HEL |> 
@@ -664,8 +757,6 @@ rm("CPH_type_area", "HEL_type_area")
       title = "Helsinki: Mapped social values by land-use"
     ) +
     theme_minimal()
-  
-  plot(gam_lu, pages = 1, rug = TRUE)
 }
 
 # Q3: Are there differences between social values?
@@ -674,55 +765,15 @@ rm("CPH_type_area", "HEL_type_area")
   {
     kruskal.test(CanopyCover_mean ~ SV_new, data = HEL)
     
-    kruskal_effsize(CanopyCover_mean ~ SV_new, data = HEL)
+    kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL)
     
-    # Dunn's Test --> uses same ranks as kruskal-wallis
-    d_test <- dunn_test(HEL, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-    print(d_test, n = 30)
+    pairwise.wilcox.test(HEL$CanopyCover_mean, HEL$SV_new,  p.adjust.method = "BH") # or "bonferroni"
     
-    # Pairwise Wilcoxon rank-sum test (or Mann-Withney-Wilcoxon) -> uses different ranks as Kruskal-Wallis
-    pairwise.wilcox.test(HEL$CanopyCover_mean, HEL$SV_new,  p.adjust.method = "bonferroni") # with bonferroni correction
-    
-    # Boxplot simple
     boxplot(CanopyCover_mean ~ SV_new, data = HEL,
             xlab = "Social value category",
             ylab = "Canopy cover (%)",
             main = "Helsinki",
             col = sv_cols)
-    
-    # Compact Letter Display
-    {
-      library(multcompView)
-      
-      # Prepare p-values for the CLD function
-      # NOTE: needs a named vector of adjusted p-values
-      p_adj <- d_test$p.adj
-      names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-      
-      # Generate the letters
-      cld <- multcompLetters(p_adj)
-      cld_df <- data.frame(SV_new = names(cld$Letters), 
-                           letters = cld$Letters)
-      
-      # CLD Plot
-      ggplot(HEL, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-        geom_boxplot(outlier.alpha = 0.2) +
-        theme_minimal() +
-        # Add letters above boxes
-        geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                  vjust = 0, size = 5, fontface = "bold", 
-                  inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-        scale_fill_manual(values = sv_cols,
-                          labels = sv_labels,
-                          name = "Social Values") + # Legend title
-        labs(title = "Canopy Cover by Social Value Category",
-             subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-             x = "Social Value Category",
-             y = "Canopy Cover (%)")
-    }
-    
-    
-    
   }
   
   # S2) By Land-Use
@@ -741,43 +792,11 @@ rm("CPH_type_area", "HEL_type_area")
       # Step 3) Kruskal effect size
       kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Forest)
       
-      # Dunn's Test --> uses same ranks as kruskal-wallis
-      d_test <- dunn_test(HEL_Forest, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-      print(d_test, n = 30)
-      
-      # Compact Letter Display
-      {
-        library(multcompView)
-        
-        # Prepare p-values for the CLD function
-        # NOTE: needs a named vector of adjusted p-values
-        p_adj <- d_test$p.adj
-        names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-        
-        # Generate the letters
-        cld <- multcompLetters(p_adj)
-        cld_df <- data.frame(SV_new = names(cld$Letters), 
-                             letters = cld$Letters)
-        
-        # CLD Plot
-        ggplot(HEL_Forest, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-          geom_boxplot(outlier.alpha = 0.2) +
-          theme_minimal() +
-          # Add letters above boxes
-          geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                    vjust = 0, size = 5, fontface = "bold", 
-                    inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-          scale_fill_manual(values = sv_cols,
-                            labels = sv_labels,
-                            name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-               x = "Social Value Category",
-               y = "Canopy Cover (%)")
-      }
-      
-      
-      
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        HEL_Forest$CanopyCover_mean,
+        HEL_Forest$SV_new,
+        p.adjust.method = "BH")
     }
     
     # Greenspace
@@ -794,40 +813,11 @@ rm("CPH_type_area", "HEL_type_area")
       # Step 3) Kruskal effect size
       kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Greenspace)
       
-      # Dunn's Test --> uses same ranks as kruskal-wallis
-      d_test <- dunn_test(HEL_Greenspace, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-      print(d_test, n = 30)
-      
-      # Compact Letter Display
-      {
-        library(multcompView)
-        
-        # Prepare p-values for the CLD function
-        # NOTE: needs a named vector of adjusted p-values
-        p_adj <- d_test$p.adj
-        names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-        
-        # Generate the letters
-        cld <- multcompLetters(p_adj)
-        cld_df <- data.frame(SV_new = names(cld$Letters), 
-                             letters = cld$Letters)
-        
-        # CLD Plot
-        ggplot(HEL_Greenspace, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-          geom_boxplot(outlier.alpha = 0.2) +
-          theme_minimal() +
-          # Add letters above boxes
-          geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                    vjust = 0, size = 5, fontface = "bold", 
-                    inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-          scale_fill_manual(values = sv_cols,
-                            labels = sv_labels,
-                            name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-               x = "Social Value Category",
-               y = "Canopy Cover (%)")
-      }
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        HEL_Greenspace$CanopyCover_mean,
+        HEL_Greenspace$SV_new,
+        p.adjust.method = "BH")
     }
     
     # Other
@@ -844,40 +834,11 @@ rm("CPH_type_area", "HEL_type_area")
       # Step 3) Kruskal effect size
       kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = HEL_Other)
       
-      # Dunn's Test --> uses same ranks as kruskal-wallis
-      d_test <- dunn_test(HEL_Other, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-      print(d_test, n = 30)
-      
-      # Compact Letter Display
-      {
-        library(multcompView)
-        
-        # Prepare p-values for the CLD function
-        # NOTE: needs a named vector of adjusted p-values
-        p_adj <- d_test$p.adj
-        names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-        
-        # Generate the letters
-        cld <- multcompLetters(p_adj)
-        cld_df <- data.frame(SV_new = names(cld$Letters), 
-                             letters = cld$Letters)
-        
-        # CLD Plot
-        ggplot(HEL_Other, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-          geom_boxplot(outlier.alpha = 0.2) +
-          theme_minimal() +
-          # Add letters above boxes
-          geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                    vjust = 0, size = 5, fontface = "bold", 
-                    inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-          scale_fill_manual(values = sv_cols,
-                            labels = sv_labels,
-                            name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-               x = "Social Value Category",
-               y = "Canopy Cover (%)")
-      }
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        HEL_Other$CanopyCover_mean,
+        HEL_Other$SV_new,
+        p.adjust.method = "BH")
       
     }
     
@@ -974,8 +935,9 @@ rm("CPH_type_area", "HEL_type_area")
     
     # S2) counts of mapped points for each bin
     canopy_counts <- CPH_binned |> 
-      count(canopy_bin) |> 
-      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+      count(canopy_bin |> 
+              mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+      )
     
     # S3) plot showing the relation
     ggplot(canopy_counts, aes(x = canopy_mid, y = n)) +
@@ -1072,7 +1034,7 @@ rm("CPH_type_area", "HEL_type_area")
     plot(gam_mod, rug = TRUE)
   }
 }
-  
+
 # Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
 {
   # S1) Binned data
@@ -1166,8 +1128,6 @@ rm("CPH_type_area", "HEL_type_area")
       title = "Copenhagen: Mapped social values by land-use"
     ) +
     theme_minimal()
-  
-  plot(gam_lu, pages = 1, rug = TRUE)
 }
 
 # Q3: Are there differences between social values?
@@ -1178,48 +1138,13 @@ rm("CPH_type_area", "HEL_type_area")
     
     kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH)
     
-    # Dunn's Test --> uses same ranks as kruskal-wallis
-    d_test <- dunn_test(CPH, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-    print(d_test, n = 30)
+    pairwise.wilcox.test(CPH$CanopyCover_mean, CPH$SV_new,  p.adjust.method = "BH") # or "bonferroni"
     
-    # Boxplot
     boxplot(CanopyCover_mean ~ SV_new, data = CPH,
             xlab = "Social value category",
             ylab = "Canopy cover (%)",
             main = "Copenhagen",
             col = sv_cols)
-    
-    # Compact Letter Display
-    {
-      library(multcompView)
-      
-      # Prepare p-values for the CLD function
-      # NOTE: needs a named vector of adjusted p-values
-      p_adj <- d_test$p.adj
-      names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-      
-      # Generate the letters
-      cld <- multcompLetters(p_adj)
-      cld_df <- data.frame(SV_new = names(cld$Letters), 
-                           letters = cld$Letters)
-      
-      # CLD Plot
-      ggplot(CPH, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-        geom_boxplot(outlier.alpha = 0.2) +
-        theme_minimal() +
-        # Add letters above boxes
-        geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                  vjust = 0, size = 5, fontface = "bold", 
-                  inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-        scale_fill_manual(values = sv_cols,
-                          labels = sv_labels,
-                          name = "Social Values") + # Legend title
-        labs(title = "Canopy Cover by Social Value Category",
-             subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-             x = "Social Value Category",
-             y = "Canopy Cover (%)")
-    }
-    
   }
   
   # S2) By Land-Use
@@ -1238,40 +1163,11 @@ rm("CPH_type_area", "HEL_type_area")
       # Step 3) Kruskal effect size
       kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Forest)
       
-      # Dunn's Test --> uses same ranks as kruskal-wallis
-      d_test <- dunn_test(CPH_Forest, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-      print(d_test, n = 30)
-      
-      # Compact Letter Display
-      {
-        library(multcompView)
-        
-        # Prepare p-values for the CLD function
-        # NOTE: needs a named vector of adjusted p-values
-        p_adj <- d_test$p.adj
-        names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-        
-        # Generate the letters
-        cld <- multcompLetters(p_adj)
-        cld_df <- data.frame(SV_new = names(cld$Letters), 
-                             letters = cld$Letters)
-        
-        # CLD Plot
-        ggplot(CPH_Forest, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-          geom_boxplot(outlier.alpha = 0.2) +
-          theme_minimal() +
-          # Add letters above boxes
-          geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                    vjust = 0, size = 5, fontface = "bold", 
-                    inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-          scale_fill_manual(values = sv_cols,
-                            labels = sv_labels,
-                            name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-               x = "Social Value Category",
-               y = "Canopy Cover (%)")
-      }
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        CPH_Forest$CanopyCover_mean,
+        CPH_Forest$SV_new,
+        p.adjust.method = "BH")
     }
     
     # Greenspace
@@ -1288,40 +1184,11 @@ rm("CPH_type_area", "HEL_type_area")
       # Step 3) Kruskal effect size
       kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Greenspace)
       
-      # Dunn's Test --> uses same ranks as kruskal-wallis
-      d_test <- dunn_test(CPH_Greenspace, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-      print(d_test, n = 30)
-      
-      # Compact Letter Display
-      {
-        library(multcompView)
-        
-        # Prepare p-values for the CLD function
-        # NOTE: needs a named vector of adjusted p-values
-        p_adj <- d_test$p.adj
-        names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-        
-        # Generate the letters
-        cld <- multcompLetters(p_adj)
-        cld_df <- data.frame(SV_new = names(cld$Letters), 
-                             letters = cld$Letters)
-        
-        # CLD Plot
-        ggplot(CPH_Greenspace, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-          geom_boxplot(outlier.alpha = 0.2) +
-          theme_minimal() +
-          # Add letters above boxes
-          geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                    vjust = 0, size = 5, fontface = "bold", 
-                    inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-          scale_fill_manual(values = sv_cols,
-                            labels = sv_labels,
-                            name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-               x = "Social Value Category",
-               y = "Canopy Cover (%)")
-      }
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        CPH_Greenspace$CanopyCover_mean,
+        CPH_Greenspace$SV_new,
+        p.adjust.method = "BH")
     }
     
     # Other
@@ -1338,40 +1205,11 @@ rm("CPH_type_area", "HEL_type_area")
       # Step 3) Kruskal effect size
       kruskal_effsize(CanopyCover_mean ~ factor(SV_new), data = CPH_Other)
       
-      # Dunn's Test --> uses same ranks as kruskal-wallis
-      d_test <- dunn_test(CPH_Other, CanopyCover_mean ~ SV_new, p.adjust.method = "bonferroni") # with bonferroni correction
-      print(d_test, n = 30)
-      
-      # Compact Letter Display
-      {
-        library(multcompView)
-        
-        # Prepare p-values for the CLD function
-        # NOTE: needs a named vector of adjusted p-values
-        p_adj <- d_test$p.adj
-        names(p_adj) <- paste0(d_test$group1, "-", d_test$group2)
-        
-        # Generate the letters
-        cld <- multcompLetters(p_adj)
-        cld_df <- data.frame(SV_new = names(cld$Letters), 
-                             letters = cld$Letters)
-        
-        # CLD Plot
-        ggplot(CPH_Other, aes(x = factor(SV_new), y = CanopyCover_mean, fill = factor(SV_new))) + 
-          geom_boxplot(outlier.alpha = 0.2) +
-          theme_minimal() +
-          # Add letters above boxes
-          geom_text(data = cld_df, aes(x = SV_new, y = 105, label = letters), 
-                    vjust = 0, size = 5, fontface = "bold", 
-                    inherit.aes = FALSE) + # Critical to prevent looking for 'fill' in cld_df
-          scale_fill_manual(values = sv_cols,
-                            labels = sv_labels,
-                            name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
-               x = "Social Value Category",
-               y = "Canopy Cover (%)")
-      }
+      # Step 4) Pairwise Wilcox
+      pairwise.wilcox.test(
+        CPH_Other$CanopyCover_mean,
+        CPH_Other$SV_new,
+        p.adjust.method = "BH")
     }
     
     # Comparative plot
@@ -1483,3 +1321,4 @@ rm("CPH_type_area", "HEL_type_area")
   perm_test
   
 }
+
