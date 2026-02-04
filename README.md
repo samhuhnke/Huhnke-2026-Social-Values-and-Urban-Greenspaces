@@ -220,3 +220,14 @@ A: For Copenhagen. Yes.
 Spatial analysis. WIP.
 
 **Current: Assess spatial structure via spatial permutation**
+
+
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
+
+### MT_04_01_Data_Analysis_200m buffered - OPTIONAL
+
+Copy of MT_04_Data_Analysis, however this one uses the 200m buffered administrative boundary to estimate land cover areas and point densities.
+
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
