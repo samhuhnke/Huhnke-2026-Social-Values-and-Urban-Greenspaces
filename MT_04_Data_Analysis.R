@@ -32,6 +32,7 @@ library(mgcv) # for section 7) + load before nnet
 library(tidyverse) # used for data handling
 library(ggplot2) # used for plotting
 library(ggpubr) # used for plotting Dunn's test results
+library(gratia) # used to plot GAM with ggplot - can use & from patchwork instead of +
 
 library(rstatix) # used to assess effect sizes
 library(nnet) # used for multinomial logistic regression
@@ -508,6 +509,11 @@ rm("CPH_type_area", "HEL_type_area")
     
     plot(gam_mod, rug = TRUE)
     
+    # replaces plot(gam_mod, ...)
+    draw(gam_mod, rug = TRUE) &
+      theme_minimal() &
+      labs(title = "Helsinki Global GAM")
+    
   }
   
   # S1) - S7) without bin 2.5 (which includes 0s)
@@ -666,6 +672,11 @@ rm("CPH_type_area", "HEL_type_area")
     theme_minimal()
   
   plot(gam_lu, pages = 1, rug = TRUE)
+  
+  # replaces plot(gam_mod, ...)
+  draw(gam_lu, rug = TRUE) &
+    theme_minimal() &
+    labs(title = "Helsinki Land Cover GAM")
 }
 
 # Q3: Are there differences between social values?
@@ -715,13 +726,11 @@ rm("CPH_type_area", "HEL_type_area")
         scale_fill_manual(values = sv_cols,
                           labels = sv_labels,
                           name = "Social Values") + # Legend title
-        labs(title = "Canopy Cover by Social Value Category",
-             subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+        labs(title = "Helsinki: Canopy Cover by Social Value Category",
+             subtitle = "GLOBAL DATA. Groups sharing a letter are not significantly different (Dunn's test with Bonferroni correction)",
              x = "Social Value Category",
              y = "Canopy Cover (%)")
     }
-    
-    
     
   }
   
@@ -770,8 +779,8 @@ rm("CPH_type_area", "HEL_type_area")
           scale_fill_manual(values = sv_cols,
                             labels = sv_labels,
                             name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+          labs(title = "Helsinki: Canopy Cover by Social Value Category",
+               subtitle = "FOREST DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
                x = "Social Value Category",
                y = "Canopy Cover (%)")
       }
@@ -823,8 +832,8 @@ rm("CPH_type_area", "HEL_type_area")
           scale_fill_manual(values = sv_cols,
                             labels = sv_labels,
                             name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+          labs(title = "Helsinki: Canopy Cover by Social Value Category",
+               subtitle = "GREENSPACE DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
                x = "Social Value Category",
                y = "Canopy Cover (%)")
       }
@@ -873,8 +882,8 @@ rm("CPH_type_area", "HEL_type_area")
           scale_fill_manual(values = sv_cols,
                             labels = sv_labels,
                             name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+          labs(title = "Helsinki: Canopy Cover by Social Value Category",
+               subtitle = "OTHER DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
                x = "Social Value Category",
                y = "Canopy Cover (%)")
       }
@@ -954,6 +963,49 @@ rm("CPH_type_area", "HEL_type_area")
   }
 }
 
+# Q3: GAMS for differences in SVS
+{
+  # S1) Binned data
+  HEL_binned <- HEL_Other |> # set input data to HEL_Forest, HEL_Greenspace, or HEL_Other
+    mutate(
+      canopy_bin = cut(
+        CanopyCover_mean,
+        breaks = seq(0, 100, by = 5),
+        include.lowest = TRUE,
+        labels = seq(2.5, 97.5, by = 5)
+      )
+    )
+  
+  # S2) canopy counts by land-use
+  canopy_counts_lu <- HEL_binned |> 
+    group_by(SV_new, canopy_bin) |> 
+    summarise(n = n(), .groups = "drop") |> 
+    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+  
+  # interaction model
+  gam_lu <- gam(
+    n ~ s(canopy_mid, by = SV_new) + SV_new,
+    family = nb(),
+    data = canopy_counts_lu,
+    method = "REML"
+  )
+  
+  summary(gam_lu)
+  
+  # plot GAM
+  plot(gam_lu, pages = 1, rug = TRUE)
+  
+  # This replaces plot(gam_lu, pages = 1, rug = TRUE)
+  library(gratia)
+  library(ggplot2)
+  
+  draw(gam_lu, rug = TRUE) &
+    theme_minimal() &
+    labs(title = "Helsinki SV GAM")
+}
+
+
+
 
 # Copenhagen
 
@@ -1014,6 +1066,11 @@ rm("CPH_type_area", "HEL_type_area")
     summary(gam_mod) # edf = 8.375  -> "wiggly"; p = ***; 
     
     plot(gam_mod, rug = TRUE)
+    
+    # replaces plot(gam_mod, ...)
+    draw(gam_mod, rug = TRUE) &
+      theme_minimal() &
+      labs(title = "Copenhagen Global GAM")
   }
   
   # S1) - S7) without of bin 2.5 (which includes 0s)
@@ -1168,6 +1225,11 @@ rm("CPH_type_area", "HEL_type_area")
     theme_minimal()
   
   plot(gam_lu, pages = 1, rug = TRUE)
+  
+  # replaces plot(gam_mod, ...)
+  draw(gam_lu, rug = TRUE) &
+    theme_minimal() &
+    labs(title = "Copenhagen Land Cover GAM")
 }
 
 # Q3: Are there differences between social values?
@@ -1214,8 +1276,8 @@ rm("CPH_type_area", "HEL_type_area")
         scale_fill_manual(values = sv_cols,
                           labels = sv_labels,
                           name = "Social Values") + # Legend title
-        labs(title = "Canopy Cover by Social Value Category",
-             subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+        labs(title = "Copenhagen: Canopy Cover by Social Value Category",
+             subtitle = "GLOBAL DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
              x = "Social Value Category",
              y = "Canopy Cover (%)")
     }
@@ -1267,8 +1329,8 @@ rm("CPH_type_area", "HEL_type_area")
           scale_fill_manual(values = sv_cols,
                             labels = sv_labels,
                             name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+          labs(title = "Copenhagen: Canopy Cover by Social Value Category",
+               subtitle = "FOREST DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
                x = "Social Value Category",
                y = "Canopy Cover (%)")
       }
@@ -1317,8 +1379,8 @@ rm("CPH_type_area", "HEL_type_area")
           scale_fill_manual(values = sv_cols,
                             labels = sv_labels,
                             name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+          labs(title = "Copenhagen: Canopy Cover by Social Value Category",
+               subtitle = "GREENSPACE DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
                x = "Social Value Category",
                y = "Canopy Cover (%)")
       }
@@ -1367,8 +1429,8 @@ rm("CPH_type_area", "HEL_type_area")
           scale_fill_manual(values = sv_cols,
                             labels = sv_labels,
                             name = "Social Values") + # Legend title
-          labs(title = "Canopy Cover by Social Value Category",
-               subtitle = "Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
+          labs(title = "Copenhagen: Canopy Cover by Social Value Category",
+               subtitle = "OTHER DATA. Groups sharing a letter are not significantly different (Dunn's test, Bonferroni)",
                x = "Social Value Category",
                y = "Canopy Cover (%)")
       }
@@ -1445,9 +1507,47 @@ rm("CPH_type_area", "HEL_type_area")
     
   }
   
-  
-  
 }
+
+# Q3: GAMS for differences in SVS
+{
+  # S1) Binned data
+  CPH_binned <- CPH_Forest |> # set input data to HEL_Forest, HEL_Greenspace, or HEL_Other
+    mutate(
+      canopy_bin = cut(
+        CanopyCover_mean,
+        breaks = seq(0, 100, by = 5),
+        include.lowest = TRUE,
+        labels = seq(2.5, 97.5, by = 5)
+      )
+    )
+  
+  # S2) canopy counts by land-use
+  canopy_counts_lu <- CPH_binned |> 
+    group_by(SV_new, canopy_bin) |> 
+    summarise(n = n(), .groups = "drop") |> 
+    mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
+  
+  # interaction model
+  gam_lu <- gam(
+    n ~ s(canopy_mid, by = SV_new) + SV_new,
+    family = nb(),
+    data = canopy_counts_lu,
+    method = "REML"
+  )
+  
+  summary(gam_lu)
+  
+  # plot GAM
+  plot(gam_lu, pages = 1, rug = TRUE)
+  
+  # This replaces plot(gam_lu, pages = 1, rug = TRUE)
+  draw(gam_lu, rug = TRUE) &
+    theme_minimal() &
+    labs(title = "Copenhagen SV GAM")
+}
+
+
 
 
 # ============================================
