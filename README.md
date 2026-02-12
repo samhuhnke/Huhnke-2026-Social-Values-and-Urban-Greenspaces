@@ -173,54 +173,7 @@ Plotting. This section creates pie charts for each city showing the land-use acc
 
 ### MT_04_Data_Analysis
 
-This code is intended to explore the relationships between social values and canopy cover. The analysis gets progressively deeper and moves from assessing non-spatial relationships to spatial relationships. 
-
-#### Section 1
-
-Loads necessary packages. It is important to keep the order here, otherwise some libraries will mask each others commands which impacts the code. Alternatively, libraries can be selectively loaded when needed. This is not recommended for tidyverse and ggplot2.
-
-#### Section 2
-
-Load raw data. This section loads data output from previous MT_02_QGIS and MT_03_General_Area_Metrics.
-
-#### Section 3
-
-Pre-processes data. This section joins the 2 raw datasets for each city into 1 dataset for each city. It reclassifies land-use into a land-use type column called type_2018 which is used for later analysis. This section further calculates new land-use areas for each of these types and selects only relevant columns for the later analysis. Finally, it creates a subset of the data for each land-use type.
-
-#### Section 4
-
-Prepare data analysis. This section specifies color palettes and legend descriptions for the later analysis.
-
-#### Section 5
-
-Exploratory analysis. This section contains histograms for the distribution of canopy cover on different levels, calculations for mapped point densities for each land-use type, and pie charts for land-use.
-
-
-#### Section 6
-
-Non-spatial analysis. This section contains a progressively finer grained non-spatial analysis of the relationship between social values and canopy cover. For that it investigates these three questions:
-
-1. Do mapped SV in general co-occur with differing levels of canopy cover? This assesses all social values on a global level without any subsets.
-
-A: For Helsinki, no, but according to the GAM results it is reasonable to assume there is are patterns in the data not revealed on a global level. 
-A: For Copenhagen, yes.
-
-2. Do mapped SV co-occur with differing levels of canopy cover if the data is seperated by land-use into forest, greenspace, and other? This assesses whether there are relationships between social values and canopy cover within land-uses.
-
-A: For Helsinki. Yes.
-A: For Copenhagen. Yes.
-
-3. Based on 2., are there differences between different social values? This assesses whether each social value reacts the same way or whether there are differences between social values. Here, the code first assesses social values individually before it compares them to each other.
-
-A: For Helsinki. Yes.
-A: For Copenhagen. Yes.
-
-#### Section 7
-
-Spatial analysis. WIP.
-
-**Current: Assess spatial structure via spatial permutation**
-
+This code joins the 2 raw datasets for each city into 1 dataset for each city. It reclassifies land-use into a land-use type column called type_2018 which is used for later analysis. This code further calculates new land-use areas for each of these types and selects only relevant columns for the later analysis. The resulting datasets are saved and stored to be used for the analyses in MT_05 and MT_06.
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
@@ -231,3 +184,30 @@ Copy of MT_04_Data_Analysis, however this one uses the 200m buffered administrat
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
+
+### MT_05_Nonspatial_Analysis 
+
+This code contains a progressively finer grained non-spatial analysis of the relationship between social values and canopy cover. It investigates these three questions:
+
+**Q1.** Do mapped SV in general co-occur with differing levels of canopy cover? This assesses all social values on a global level without any subsets.
+
+A: For Helsinki, no, but according to the GAM results it is reasonable to assume there is are patterns in the data not revealed on a global level. 
+A: For Copenhagen, yes.
+
+**Q2.** Do mapped SV co-occur with differing levels of canopy cover if the data is seperated by land-use into forest, greenspace, and other? This assesses whether there are relationships between social values and canopy cover within land-uses.
+
+A: For Helsinki. Yes.
+A: For Copenhagen. Yes.
+
+**Q3.** Based on Q2., are there differences between different social values? This assesses whether each social value reacts the same way or whether there are differences between social values. Here, the code first assesses social values individually before it compares them to each other.
+
+A: For Helsinki. Yes.
+A: For Copenhagen. Yes.
+
+
+-----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
+
+### MT_06_Spatial_Analysis
+
+Spatial analysis. WIP.
