@@ -39,42 +39,20 @@ NOTE: This code uses many {}. This is purely done for convenience to structure t
 
 ### MT_01_Data_Harmonization_Code
 
-This code is intended to harmonize the PPGIS data from Helsinki and Copenhagen. The original social values (13 for Helsinki, 17 for Copenhagen) are hereby reclassified into **8 new** (oftentimes broader) social value categories. Categories that could not sensibly be reclassified were omitted from the 8 new social value categories.
+This code is harmonizes the PPGIS data from Helsinki and Copenhagen. The original social values (13 for Helsinki, 17 for Copenhagen) are reclassified into **8 new** (oftentimes broader) social value categories. Categories that could not sensibly be reclassified were omitted from the 8 new social value categories.
 
-The result of this code are two reclassified .csv-files! 
-
-#### Section 1
-
-Load necessary packages.
-
-#### Section 2
-
-Load raw data. The data is the CO-CARBON PPGIS survey data for Helsinki and Copenhagen.
-
-#### Section 3
-
-Data pre-processing. This section removes any NAs from both datasets and further re-arranges the format of the Copenhagen data to match that of the Helsinki data.
-
-#### Section 4
-
-Data hamronization. This section harmonizes both datasets by re-classifying the social value categories into categories that match both datasets. This process reduces the size of each dataset slightly. 
-
-#### Section 5
-
-Data analysis. This section quickly checks the data structure of each dataset. 
-
-#### Section 6
-
-Save data. 
+The results of this code are two reclassified .csv-files! 
 
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
 
-### MT_02_QGIS - WIP
+### MT_02_QGIS 
+
+This section describes steps taken in QGIS
 
 #### CLMS tree cover density Pre-Processing
-1. Combine CLMS data packages for Helsinki into one dataset
-2. WIP
+1. If needed: Combine CLMS data packages for Helsinki into one dataset
+2. Clip tree cover to the extent of the administrative boundary buffered by 200m.
 
 #### Helsinki Pre-Processing
 1. Gathering of CLM canopy cover data for Helsinki and NLS administrative boundaries and water bodies data
@@ -95,7 +73,7 @@ To identify the type of greenspace the CLM Urban Atlas (2018) data was used. The
 2. Clip Urban Atlas landcover data to the extent of the non-buffered and the 200m-buffered administrative boundary
 3. Spatial join PPGIS and Urban Atlas buffered landcover data by using "join attributes by location --> are within --> one-to-one"
 
-NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces 107 unmatched points with *code_2018 = NA*. Most of theses unmatched points are in the water, where there is no Urban Atlas data. Some amount of points are within the Viikki Bay area.
+NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces 107 unmatched points with *code_2018 = NA*. Most of theses unmatched points are in the water, where there is no Urban Atlas data. Some of these points are within the Viikki Bay area.
 
 #### Helsinki Zonal Statistics
 1. Establish 50m radial buffer zone around each point of the PPGIS (*Vector Geometry --> Buffer* + *Segments = 10*)
@@ -103,6 +81,10 @@ NOTE: Step 3 does not match all PPGIS points with a land use and thus introduces
 3. Export as .csv-file
 
 -----------------------------------------------------------------------------------------------------
+
+#### CLMS tree cover density Pre-Processing
+1. If needed: Combine CLMS data packages for Copenhagen into one dataset
+2. Clip tree cover to the extent of the administrative boundary buffered by 200m.
 
 #### Copenhagen Pre-Processing
 1. Gathering of CLM canopy cover data for Copenhagen and DigDag administrative boundaries

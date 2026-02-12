@@ -39,7 +39,6 @@ library(nnet) # used for multinomial logistic regression
 library(ggeffects) # to visualize results of multinomial logistic regression
 
 library(sf) # to use sf type files
-library(geojsonsf) # to read geojson variable
 
 library(spdep)
 library(coin)
@@ -59,7 +58,7 @@ CPH <- read.csv("CSVs/Copenhagen_Final.csv", sep = ",")
 # ============================================
 
 # libraries
-library(geojsonsf)
+library(geojsonsf) # to extract information from geojson column
 
 # Helsinki
 {
@@ -172,7 +171,6 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
 {
   # libraries
   library(geojsonsf)
-  library(sf)
   
   # add sf features to df
   HEL_sf <- HEL # re-assign df
@@ -195,13 +193,17 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
   # libraries
   library(geojsonsf)
   library(sf)
+  
   library(spdep)
   library(spData)
   
   # Moran's I tests - only suitable for continuous variables
   {
     ### Approach 1: Distance Matrix
-    # create weigthed list object from point distance matrix
+    # NOTE: This takes forever because the dataset is so large.
+    # NOTE: Also this takes into account all points at any given point, which for this analysis doesn't seem to be too sensible
+    
+    # create weighted list object from point distance matrix
     dmat <- 1/sf::st_distance(HEL_sf)^2 |> 
       unclass() # unclassing because st_distance() otherwise returns a "unit" class object, which would affect later operations
     class(dmat)
@@ -209,7 +211,7 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
     diag(dmat) <- 0 # set matrix diagonal as 0
     dmat
     
-    dmat_listw <- spdep::mat2listw(dmat, style = "W")
+    dmat_listw <- spdep::mat2listw(dmat, style = "W") # this creates the weighted list
     dmat_listw$neighbours[[1]] 
     sum(dmat_listw$wights[[1]])
     
