@@ -1,11 +1,11 @@
 # ============================================ 
-# MT_04_Data_Analysis
+# MT_05_Nonspatial_Analysis
 # ============================================
 
 # AUTHOR: Sam Huhnke, M.Sc. University of Helsinki
 #
 #
-# This code provides analyses of relations between mapped social values and tree canopy cover for
+# This code provides non-spatial analyses of relations between mapped social values and tree canopy cover for
 # Helsinki and Copenhagen. 
 # 
 # NOTE: The data used for this analysis is owned by the CO-CARBON research project. To gain access to the data,
@@ -26,128 +26,47 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 # 1) Load necessary packages
 # ============================================
 
-library(MASS) # for section 7) + load before dplyr
-library(mgcv) # for section 7) + load before nnet
-
 library(tidyverse) # used for data handling
+
 library(ggplot2) # used for plotting
 library(ggpubr) # used for plotting Dunn's test results
 library(gratia) # used to plot GAM with ggplot - can use & from patchwork instead of +
+library(ggeffects) # to visualize results of multinomial logistic regression
 
 library(rstatix) # used to assess effect sizes
 library(nnet) # used for multinomial logistic regression
-library(ggeffects) # to visualize results of multinomial logistic regression
-
-library(sf) # to use sf type files
-library(geojsonsf) # to read geojson variable
-
-library(spdep)
-library(coin)
 
 # ============================================
 # 2) Load data
 # ============================================
 
 # Helsinki
-HEL_raw <- read.csv("CSVs/Helsinki_SV_50mCC_LU.csv", sep = ",")
-HEL_areas <- read.csv("CSVs/Helsinki_LU_Areas.csv", sep = ",")
+HEL <- read.csv("CSVs/Helsinki_Final.csv", sep = ",")
 
 # Copenhagen
-CPH_raw <- read.csv("CSVs/Copenhagen_SV_50mCC_LU.csv", sep = ",")
-CPH_areas <- read.csv("CSVs/Copenhagen_LU_Areas.csv", sep = ",")
+CPH <- read.csv("CSVs/Copenhagen_Final.csv", sep = ",")
+
 
 # ============================================
-# 3) Data Pre-Processing
-# NOTE: This section joins the area data with the PPGIS based on the code_2018 column.
-# NOTE: Further this section filters out any unnecessary columns for further analysis.
+# 3) Create Subsets
 # ============================================
 
 # Helsinki
-{
-  HEL <- HEL_raw |> 
-    # add area data
-    left_join(HEL_areas, by = "code_2018") |> 
-    # select relevant variables
-    select(geojson, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
-    # rename canopy cover variable 
-    rename(CanopyCover_mean = X_mean) |> 
-    # further simplify classes into Greenspace, Forest, and Other
-    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
-                                 category_2018 == 6 ~ "Forest",
-                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
-  
-  # calculate area per type
-  HEL_type_area <- HEL |> 
-    select(type_2018, area_km2) |> 
-    group_by(type_2018) |> 
-    unique() |> 
-    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
-    ungroup() |> 
-    reframe(type_2018 = type_2018,
-            type_area_km2 = type_area_km2,
-            type_area_per = type_area_km2/sum(type_area_km2)*100)
-  
-  # join type area into complete data set
-  HEL <- HEL |> 
-    left_join(HEL_type_area, by = "type_2018")
-  
-  # Turn SV_new into categorical value (or factor in R)
-  HEL$SV_new <- factor(HEL$SV_new)
-  
-  # Create subsets
-  HEL_Forest <- HEL |> filter(type_2018 == "Forest")
-  HEL_Greenspace <- HEL |> filter(type_2018 == "Greenspace")
-  HEL_Other <- HEL |> filter(type_2018 == "Other")
-
-}
+HEL_Forest <- HEL |> filter(type_2018 == "Forest")
+HEL_Greenspace <- HEL |> filter(type_2018 == "Greenspace")
+HEL_Other <- HEL |> filter(type_2018 == "Other")
 
 # Copenhagen
-{
-  CPH <- CPH_raw |> 
-    # add area data
-    left_join(CPH_areas, by = "code_2018") |> 
-    # select relevant variables
-    select(GeoJSON, Respondent, code_2018, category_2018, area_km2, area_percent, total_km2, SV_new, X_mean) |> 
-    # rename canopy cover variable 
-    rename(CanopyCover_mean = X_mean) |> 
-    # further simplify classes into Greenspace, Forest, and Other
-    mutate(type_2018 = case_when(category_2018 == 4 ~ "Greenspace",
-                                 category_2018 == 6 ~ "Forest",
-                                 category_2018 != 4 & category_2018 != 6 | is.na(category_2018) ~ "Other"))
-  
-  # calculate area per type
-  CPH_type_area <- CPH |> 
-    select(type_2018, area_km2) |> 
-    group_by(type_2018) |> 
-    unique() |> 
-    reframe(type_area_km2 = sum(area_km2, na.rm = T)) |> 
-    ungroup() |> 
-    reframe(type_2018 = type_2018,
-            type_area_km2 = type_area_km2,
-            type_area_per = type_area_km2/sum(type_area_km2)*100)
-  
-  # join type area into complete data set
-  CPH <- CPH |> 
-    left_join(CPH_type_area, by = "type_2018")
-  
-  # Turn SV_new into categorical value (or factor in R)
-  CPH$SV_new <- factor(CPH$SV_new)
-  
-  # Create subsets
-  CPH_Forest <- CPH |> filter(type_2018 == "Forest")
-  CPH_Greenspace <- CPH |> filter(type_2018 == "Greenspace")
-  CPH_Other <- CPH |> filter(type_2018 == "Other")
-}
-
-# remove temporary layers
-rm("CPH_type_area", "HEL_type_area")
+CPH_Forest <- CPH |> filter(type_2018 == "Forest")
+CPH_Greenspace <- CPH |> filter(type_2018 == "Greenspace")
+CPH_Other <- CPH |> filter(type_2018 == "Other")
 
 
 # ============================================
 # 4) Analysis Preparation
 # ============================================
 
-# Colors
+# Assign colors
 {
   # Land Use category colors
   category_cols <- c("#bf0000", "#959595", "#734d37", "#8cdc00", "#ffffa8", "#008c00", "#a6a6ff", "#80f2e6","#ccffcc")
@@ -160,7 +79,7 @@ rm("CPH_type_area", "HEL_type_area")
   
 }
 
-# Labels
+# Assign labels
 {
   # Land Use categories
   lu_labels <- c(
@@ -386,7 +305,7 @@ rm("CPH_type_area", "HEL_type_area")
   # patchwork
   p1 + p2 + plot_layout(guides = "collect") &
     theme(legend.position = "right")
-
+  
 }
 
 # Pie Charts for type-based point counts
@@ -408,11 +327,11 @@ rm("CPH_type_area", "HEL_type_area")
   c1 <- CPH_points |> select(type_2018, n) |> unique()
   
   # helsinki
-  p1 <- ggplot(h1, aes(x = "", y = n, fill = as.factor(type_2018))) +
+  p1 <- ggplot(c1, aes(x = "", y = n, fill = as.factor(type_2018))) +
     geom_col(width = 1, color = "black", linewidth = 0.4) +
     coord_polar("y") +
     theme_void() +
-    labs(title = "Helsinki Point Counts",
+    labs(title = "Copenhagen Point Counts",
          subtitle = "Absolute counts by land-use") +
     scale_fill_manual(
       values = type_cols,
@@ -424,11 +343,11 @@ rm("CPH_type_area", "HEL_type_area")
       plot.subtitle = element_text(hjust = 0.5, size = 8))
   
   # Copenhagen
-  p2 <- ggplot(c1, aes(x = "", y = n, fill = as.factor(type_2018))) +
+  p2 <- ggplot(h1, aes(x = "", y = n, fill = as.factor(type_2018))) +
     geom_col(width = 1, color = "black", linewidth = 0.4) +
     coord_polar("y") +
     theme_void() +
-    labs(title = "Copenhagen Point Counts",
+    labs(title = "Helsinki Point Counts",
          subtitle = "Absolute counts by land-use") +
     scale_fill_manual(
       values = type_cols,
@@ -449,9 +368,9 @@ rm("CPH_type_area", "HEL_type_area")
 # 6) Non-spatial analysis 
 # ============================================
 
-# Helsinki
+#### Helsinki
 
-# Q1: Do mapped SV in general co-occur with canopy cover? -----------------
+# Q1: Do mapped SV in general co-occur with canopy cover?
 {
   # S1) - S7) with the inclusion of bin 2.5 (which includes 0s)
   {
@@ -1005,11 +924,9 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 
+#### Copenhagen
 
-
-# Copenhagen
-
-# Q1: Do mapped SV in general co-occur with canopy cover? -----------------
+# Q1: Do mapped SV in general co-occur with canopy cover?
 {
   # S1) - S7) with the inclusion of bin 2.5 (which includes 0s)
   {
@@ -1088,9 +1005,8 @@ rm("CPH_type_area", "HEL_type_area")
     
     # S2) counts of mapped points for each 5% bin
     canopy_counts <- CPH_binned |> 
-      count(canopy_bin |> 
-              mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
-      )
+      count(canopy_bin) |> 
+      mutate(canopy_mid = as.numeric(as.character(canopy_bin)))
     
     canopy_counts <- canopy_counts |> filter(canopy_bin != "2.5")
     
@@ -1129,7 +1045,7 @@ rm("CPH_type_area", "HEL_type_area")
     plot(gam_mod, rug = TRUE)
   }
 }
-  
+
 # Q2: Do mapped social values co-occur with canopy cover within land-use types? (LU types are forest, greenspace, and other)
 {
   # S1) Binned data
@@ -1548,38 +1464,3 @@ rm("CPH_type_area", "HEL_type_area")
 }
 
 
-
-
-# ============================================
-# 7) Spatial analysis 
-# ============================================
-
-# Spatial Analysis: Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
-{
-  # convert to sf
-  HEL_sf <- geojson_sf(HEL_Forest$geojson)
-  HEL_sf <- cbind(HEL_sf, HEL_Forest[ , !names(HEL_Forest) %in% "geojson"])
-  class(HEL_sf)
-  st_crs(HEL_sf) <- 4326      # GeoJSON is almost always WGS84
-  HEL_sf <- st_transform(HEL_sf, 3067)
-  
-  # Define neighbors by establishing distance 
-  coords <- st_coordinates(HEL_sf)
-  
-  # rn virtually useless
-  nb <- dnearneigh(coords, 0, 50) # last digit = distance to neighbor
-  
-  # create spatial blocks (factor) - you need to define this yourself
-  # e.g., divide points into clusters based on coordinates
-  set.seed(42)
-  HEL_sf$block <- factor(kmeans(coords, centers = 50)$cluster)
-  
-  # spatial permutation test
-  perm_test <- independence_test(
-    CanopyCover_mean ~ factor(SV_new) | block,  # <-- use 'block' in formula
-    data = HEL_sf,
-    distribution = approximate(nresample = 9999))  # updated argument
-  
-  perm_test
-  
-}
