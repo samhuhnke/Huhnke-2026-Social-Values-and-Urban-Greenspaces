@@ -193,3 +193,5 @@ A: For Copenhagen. Yes.
 ### MT_06_Spatial_Analysis
 
 Spatial analysis. WIP.
+
+Assesses autocorrelation of social values using join count statistic for each landcover.
