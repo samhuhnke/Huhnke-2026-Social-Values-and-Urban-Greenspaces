@@ -26,10 +26,8 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data")
 # 1) Load necessary packages
 # ============================================
 
-library(MASS) # for section 7) + load before dplyr
-library(mgcv) # for section 7) + load before nnet
-
 library(tidyverse) # used for data handling
+
 library(ggplot2) # used for plotting
 library(ggpubr) # used for plotting Dunn's test results
 library(gratia) # used to plot GAM with ggplot - can use & from patchwork instead of +
@@ -38,7 +36,7 @@ library(rstatix) # used to assess effect sizes
 library(nnet) # used for multinomial logistic regression
 library(ggeffects) # to visualize results of multinomial logistic regression
 
-library(sf) # to use sf type files
+
 
 library(spdep)
 library(coin)
@@ -59,6 +57,7 @@ CPH <- read.csv("CSVs/Copenhagen_Final.csv", sep = ",")
 
 # libraries
 library(geojsonsf) # to extract information from geojson column
+library(sf) # to use sf type files
 
 # Helsinki
 {
@@ -131,14 +130,239 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
   )
 }
 
-
 # ============================================
 # 6) Spatial Analysis
 # ============================================
 
 
+### 6.1) Spatial autocorrelation based on joint count statistics
+
+# Helsinki
+{
+  # libraries
+  library(geojsonsf)
+  library(sf)
+  library(spdep)
+  
+  # Joint count statistics for each subset
+  {
+    # Vector of dataset suffixes
+    datasets <- c("Forest", "Greenspace", "Other")
+    
+    # Initialize a nested list to store all results
+    joincount_results_types <- list()
+    
+    # Loop through each dataset
+    for (dataset in datasets) {
+      
+      # Get the current dataset
+      current_data <- get(paste0("HEL_sf_", dataset))
+      
+      # create weighted list
+      knn_listw <- sf::st_coordinates(current_data) |>  
+        spdep::knearneigh(k=10) |>  
+        spdep::knn2nb() |>  # create neighbour list
+        spdep::nb2listw(style = "W") # create weights list from neighbor object
+      
+      # Get unique social value categories
+      sv_categories <- unique(current_data$SV_new)
+      
+      # Initialize a list for this dataset's results
+      joincount_results_types[[dataset]] <- list()
+      
+      # Loop through each category
+      for (i in sv_categories) {
+        # Create presence-absence column
+        current_data[[paste0("SV_", i)]] <- as.numeric(current_data$SV_new == i)
+        
+        # Calculate joint count statistic
+        joincount_results_types[[dataset]][[paste0("SV_", i)]] <- joincount.test(
+          factor(current_data[[paste0("SV_", i)]]),
+          knn_listw
+        )
+      }
+      
+      # Save the modified dataset back
+      assign(paste0("HEL_sf_", dataset), current_data)
+    
+    }
+    
+    # Access results for a specific dataset and category:
+    joincount_results_types$Forest
+    joincount_results_types$Greenspace
+    joincount_results_types$Other
+    joincount_results_types
+    
+  }
+  
+  # Plots for joint count
+  {
+    # Extract the [[1]] results (which appear to be the main join count tests)
+    results_df <- data.frame(
+      dataset = character(),
+      category = character(),
+      statistic = numeric(),
+      p_value = numeric(),
+      stringsAsFactors = FALSE
+    )
+    
+    # loop to extract elements
+    for (dataset in datasets) {
+      for (category in names(joincount_results_types[[dataset]])) {
+        result <- joincount_results_types[[dataset]][[category]]
+        
+        # Extract the first element [[1]] which contains the test results
+        results_df <- rbind(results_df, data.frame(
+          dataset = dataset,
+          category = category,
+          statistic = result[[2]]$statistic,
+          p_value = result[[2]]$p.value
+        ))
+      }
+    }
+    
+    # Create the grouped bar chart
+    library(ggplot2)
+    
+    # Add significance indicator
+    results_df$significant <- ifelse(results_df$p_value < 0.05, "Significant", "Not Significant")
+    
+    ggplot(results_df, aes(x = category, y = statistic, fill = dataset, alpha = significant)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = type_cols) +
+      scale_alpha_manual(values = c("Significant" = 1, "Not Significant" = 0.3)) +
+      theme_minimal() +
+      labs(title = "Join Count Statistics by Social Value and Landscape Type",
+           x = "Social Value Category",
+           y = "Join Count Statistic",
+           fill = "Landscape Type",
+           alpha = "Significance (p < 0.05)")
+  
+  
+
+}
+  
+  
+}
+
+# Copenhagen
+{
+  # Joint count statistics for each subset
+  {
+    # Vector of dataset suffixes
+    datasets <- c("Forest", "Greenspace", "Other")
+    
+    # Initialize a nested list to store all results
+    joincount_results_types <- list()
+    
+    # Loop through each dataset
+    for (dataset in datasets) {
+      
+      # Get the current dataset
+      current_data <- get(paste0("CPH_sf_", dataset))
+      
+      # create weighted list
+      knn_listw <- sf::st_coordinates(current_data) |>  
+        spdep::knearneigh(k=10) |>  
+        spdep::knn2nb() |>  # create neighbour list
+        spdep::nb2listw(style = "W") # create weights list from neighbor object
+      
+      # Get unique social value categories
+      sv_categories <- unique(current_data$SV_new)
+      
+      # Initialize a list for this dataset's results
+      joincount_results_types[[dataset]] <- list()
+      
+      # Loop through each category
+      for (i in sv_categories) {
+        # Create presence-absence column
+        current_data[[paste0("SV_", i)]] <- as.numeric(current_data$SV_new == i)
+        
+        # Calculate joint count statistic
+        joincount_results_types[[dataset]][[paste0("SV_", i)]] <- joincount.test(
+          factor(current_data[[paste0("SV_", i)]]),
+          knn_listw
+        )
+      }
+      
+      # Save the modified dataset back
+      assign(paste0("CPH_sf_", dataset), current_data)
+    }
+    
+    # Access results for a specific dataset and category:
+    joincount_results_types$Forest
+    joincount_results_types$Greenspace
+    joincount_results_types$Other
+    joincount_results_types
+    
+  }
+  
+  # Plots for joint count
+  {
+    # Extract the [[1]] results (which appear to be the main join count tests)
+    results_df <- data.frame(
+      dataset = character(),
+      category = character(),
+      statistic = numeric(),
+      p_value = numeric(),
+      stringsAsFactors = FALSE
+    )
+    
+    # loop to extract elements
+    for (dataset in datasets) {
+      for (category in names(joincount_results_types[[dataset]])) {
+        result <- joincount_results_types[[dataset]][[category]]
+        
+        # Extract the first element [[1]] which contains the test results
+        results_df <- rbind(results_df, data.frame(
+          dataset = dataset,
+          category = category,
+          statistic = result[[2]]$statistic,
+          p_value = result[[2]]$p.value
+        ))
+      }
+    }
+    
+    # Create the grouped bar chart
+    library(ggplot2)
+    
+    # Add significance indicator
+    results_df$significant <- ifelse(results_df$p_value < 0.05, "Significant", "Not Significant")
+    
+    ggplot(results_df, aes(x = category, y = statistic, fill = dataset, alpha = significant)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = type_cols) +
+      scale_alpha_manual(values = c("Significant" = 1, "Not Significant" = 0.3)) +
+      theme_minimal() +
+      labs(title = "Join Count Statistics by Social Value and Landscape Type",
+           x = "Social Value Category",
+           y = "Join Count Statistic",
+           fill = "Landscape Type",
+           alpha = "Significance (p < 0.05)")
+    
+    
+    
+  }
+  
+}
+
+
+### 6.2) Spatial autocorrelation
+
+
+
+
+# ============================================
+# 7) WIP Stuff
+# ============================================
+
 # Spatial Analysis: Spatially constrained permutation [MOCKUP FOR HEL_FOREST] ============
 {
+  # 
+  
+  library(MASS) # for section 7) + load before dplyr or call functions individually
+  library(mgcv) # for section 7) + load before nnet or call functions individually
+  
   # convert to sf
   HEL_sf <- geojson_sf(HEL_Forest$geojson)
   HEL_sf <- cbind(HEL_sf, HEL_Forest[ , !names(HEL_Forest) %in% "geojson"])
@@ -188,21 +412,12 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
   plot(HEL_modelled)
 }
 
-# testing with spatial autocorrelation
+# Moran's I tests - only suitable for continuous variables
 {
-  # libraries
-  library(geojsonsf)
-  library(sf)
-  
-  library(spdep)
-  library(spData)
-  
-  # Moran's I tests - only suitable for continuous variables
+  ### Approach 1: Distance Matrix
+  # NOTE: This takes forever because the dataset is so large.
+  # NOTE: Also this takes into account all points at any given point, which for this analysis doesn't seem to be too sensible
   {
-    ### Approach 1: Distance Matrix
-    # NOTE: This takes forever because the dataset is so large.
-    # NOTE: Also this takes into account all points at any given point, which for this analysis doesn't seem to be too sensible
-    
     # create weighted list object from point distance matrix
     dmat <- 1/sf::st_distance(HEL_sf)^2 |> 
       unclass() # unclassing because st_distance() otherwise returns a "unit" class object, which would affect later operations
@@ -218,11 +433,14 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
     # calculate moran's I
     moran <- spdep::morarn.test(HEL_sf$SV_new, dmat_listw)
     
-    ### Approach 2: k-nearest neighbor
-    # 
-    knn_listw <- sf::st_coordinates(HEL_sf) %>% 
-      spdep::knearneigh(k=10) %>% 
-      spdep::knn2nb() %>% # create neighbour list
+  }
+  
+  ### Approach 2: k-nearest neighbor
+  # NOTE: THis is faster and more sensible!
+  {
+    knn_listw <- sf::st_coordinates(HEL_sf) |> 
+      spdep::knearneigh(k=10) |>  
+      spdep::knn2nb() |>  # create neighbour list
       spdep::nb2listw(style = "W") # create weights list from neighbour object
     knn_listw$neighbours[[1]]
     knn_listw$weights[[1]]
@@ -231,31 +449,71 @@ CPH_sf_Other <- CPH_sf |> filter(type_2018 == "Other")
     spdep::moran.test(HEL_sf$CanopyCover_mean, knn_listw)
   }
   
-  # Joint count statistics - suitable for categorical variables
-  # NOTE: this tests whether AA co-occurences are more likely than expected due to random chance
-  {
-    ### Approach 2: k-nearest neighbor
-    # 
-    knn_listw <- sf::st_coordinates(HEL_sf) %>% 
-      spdep::knearneigh(k=10) %>% 
-      spdep::knn2nb() %>% # create neighbour list
-      spdep::nb2listw(style = "W") # create weights list from neighbour object
-    knn_listw$neighbours[[1]]
-    knn_listw$weights[[1]]
-    
-    # Make sure SV_new is a factor
-    HEL_sf$SV_new <- as.factor(HEL_sf$SV_new)
-    
-    # Example for one category:
-    HEL_sf$SV_Personal <- as.numeric(HEL_sf$SV_new == 8)
-    
-    join_Personal <- joincount.test(
-      factor(HEL_sf$SV_Personal),
-      knn_listw
-    )
-    
-    join_Personal
+}
+
+# Moran's I on MLR residuals - This can test model adequacy: significant results = autocorrelation at play
+# NOTE: All of this can be turned into a loop
+{
+  # prepare weighted list
+  knn_listw <- sf::st_coordinates(HEL_sf) |>  
+    spdep::knearneigh(k=10) |>  
+    spdep::knn2nb() |>  # create neighbour list
+    spdep::nb2listw(style = "W") # create weights list from neighbor object
+  
+  # load 
+  library(nnet)
+  
+  # createt MLR
+  MLR <- multinom(SV_new ~ CanopyCover_mean, data = HEL_sf)
+  
+  # Pearson residuals
+  res <- residuals(MLR, type = "pearson")
+  
+  # Moran's on each variable
+  
+  # Initialize a list to store results
+  moran_results <- list()
+  
+  # Loop through columns 1 to 4
+  for (i in 1:8) {
+    moran_results[[i]] <- moran.test(res[, i], knn_listw)
   }
   
+  # Access results
+  moran_results
+  # or e.g.
+  moran_results[[1]]
 }
+
+# Spatial Clustering by k means -> NO SPATIAL INFORMATION
+{
+    data <- sf::st_set_geometry(HEL_sf, NULL) |> select(CanopyCover_mean)
+    
+    HEL_sf
+    data
+    
+    clusters <- kmeans(data, 8, iter.max = 100)
+    
+    clusters
+    
+    HEL_sf$cluster <- clusters$cluster
+    plot(HEL_sf[,"cluster"])
+    
+    # plot
+    plotdata <- tibble::add_column(data, cluster = clusters$cluster)
+    
+    # reshape the wide format data frame into a long format
+    plotdata <- tidyr::gather(plotdata, variable, value, -cluster)
+    
+    # change type of cluster variable to factor for grouping
+    plotdata$cluster <- factor(plotdata$cluster)
+    
+    # ggplot2
+    library(ggplot2)
+    ggplot(plotdata, aes(x = variable, y = value, fill = cluster)) + 
+      geom_boxplot()
+  }
+
+
+
 
