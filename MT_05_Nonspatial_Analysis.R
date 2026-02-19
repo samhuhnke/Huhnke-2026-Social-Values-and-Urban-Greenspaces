@@ -35,6 +35,7 @@ library(ggeffects) # to visualize results of multinomial logistic regression
 
 library(rstatix) # used to assess effect sizes
 library(nnet) # used for multinomial logistic regression
+library(mgcv) # used for GLMs and GAMs
 
 # ============================================
 # 2) Load data
