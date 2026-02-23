@@ -1,5 +1,5 @@
 # ============================================ 
-# MT_01_Data_Hermonization_Code
+# MT_01_PPGIS_Harmonization
 # ============================================
 #
 # AUTHOR: Sam Huhnke, M.Sc. University of Helsinki
