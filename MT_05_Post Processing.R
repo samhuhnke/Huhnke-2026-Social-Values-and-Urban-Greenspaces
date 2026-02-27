@@ -130,7 +130,7 @@ for (x in resolution) {
   Final$Dominant_LC <- factor(
     ifelse(Final$Forest >= Final$Greenspace & Final$Forest >= Final$Other, "Forest",
            ifelse(Final$Greenspace >= Final$Other, "Greenspace", "Other"))
-  )s
+  )
   
   # create final dataset
   assign(

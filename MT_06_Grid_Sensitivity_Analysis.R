@@ -213,6 +213,7 @@ gam_mod_4 <- gam(n_total ~ s(CC_mean, by = factor(Dominant_LC)) + factor(Dominan
 summary(gam_mod_4)
 plot(gam_mod_4, pages = 1, rug = TRUE)
 
+
 # Plot: Frequency plots
 ggplot(file, aes(x = CC_mean, y = n_total)) +
   geom_point() +

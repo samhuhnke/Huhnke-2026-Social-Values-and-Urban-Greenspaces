@@ -160,7 +160,7 @@ HEL_no_NA <- HEL_raw |> filter(!is.na(SV_type))
   # NOTE: see reclassification table
   HEL_SV_reclassified <- HEL_no_NA |> 
     mutate(SV_new = as.factor(case_when(SV_type == 0 ~ 1,
-                                        SV_type == 1 ~ 2,
+                                        SV_type == 1 | SV_type == 2 ~ 2,
                                         SV_type == 3 ~ 3,
                                         SV_type == 4 | SV_type == 5 | SV_type == 6 ~ 4,
                                         SV_type == 7 ~ 5,
@@ -311,7 +311,23 @@ HEL_no_NA <- HEL_raw |> filter(!is.na(SV_type))
 
 
 # ============================================
-# 6) Save harmonized data as .csv files
+# 6) Turn into spatial file
+# ============================================
+library(sf)
+
+HEL_reprojected <- HEL_SV_reclassified_final |> 
+  st_as_sf(wkt = "wkt", crs = 4326) |>
+  st_transform(crs = 3035)
+
+CPH_reprojected <- CPH_SV_reclassified_final |> 
+  st_as_sf(wkt = "WKT", crs = 4326) |>
+  st_transform(crs = 3035)
+
+head(CPH_SV_reclassified_final$WKT)
+head(CPH_reprojected$WKT)
+
+# ============================================
+# 7) Save harmonized data as .csv files
 # ============================================
 
 # 6.1) Helsinki
@@ -324,6 +340,9 @@ if (!file.exists("Copenhagen/Copenhagen_SV_reclassified.csv")) {
   write.csv(CPH_SV_reclassified_final, "Copenhagen/Copenhagen_SV_reclassified.csv")
 }
 
+# save as geopackages
+st_write(HEL_reprojected, "Helsinki/Helsinki_reprojected_unclipped.shp")
+st_write(CPH_reprojected, "Copenhagen/Copenhagen_reprojected_unclipped.shp")
 
 
 
