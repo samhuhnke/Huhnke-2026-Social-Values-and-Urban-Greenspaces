@@ -1,5 +1,5 @@
 # ============================================ 
-# MT_02_UrbanAtlas_Reclassification
+# MT_03_UrbanAtlas_Reclassification
 # ============================================
 #
 # AUTHOR: Sam Huhnke, M.Sc. University of Helsinki
@@ -29,8 +29,8 @@ library(sf) # to work with sf files
 # ============================================
 # 2) Load data
 # ============================================
-HEL_UA <- read_sf(dsn = "Helsinki_Final_QGIS/", layer = "Final_Helsinki_Urban Atlas 2018_200m")
-CPH_UA <- read_sf(dsn = "Copenhagen_Final_QGIS/", layer = "Final_Copenhagen_Urban Atlas 2018_200m")
+HEL_UA <- read_sf(dsn = "Helsinki_Final_QGIS/", layer = "Helsinki_Urban Atlas 2018_full")
+CPH_UA <- read_sf(dsn = "Copenhagen_Final_QGIS/", layer = "Copenhagen_Urban Atlas 2018_full")
 
 
 # control data structure
@@ -67,13 +67,13 @@ sf::st_drop_geometry(CPH_UA_reclassified) |> select(type_2018) |> unique()
 # ============================================
 
 # Helsinki
-if (!file.exists("Helsinki_Final_QGIS/Helsinki_Urban Atlas 2018_reclassified_200m.shp")) {
-  sf::st_write(HEL_UA_reclassified, "Helsinki_Final_QGIS/Final_Helsinki_Urban Atlas 2018_reclassified_200m.shp")
+if (!file.exists("Helsinki_Final_QGIS/Helsinki_Urban Atlas 2018_reclassified_full.shp")) {
+  sf::st_write(HEL_UA_reclassified, "Helsinki_Final_QGIS/Helsinki_Urban Atlas 2018_reclassified_full.shp")
 }
 
 # Copenhagen
-if (!file.exists("Copenhagen_Final_QGIS/Copenhagen_Urban Atlas 2018_reclassified_200m.shp")) {
-  sf::st_write(CPH_UA_reclassified, "Copenhagen_Final_QGIS/Final_Copenhagen_Urban Atlas 2018_reclassified_200m.shp")
+if (!file.exists("Copenhagen_Final_QGIS/Copenhagen_Urban Atlas 2018_reclassified_full.shp")) {
+  sf::st_write(CPH_UA_reclassified, "Copenhagen_Final_QGIS/Copenhagen_Urban Atlas 2018_reclassified_full.shp")
 }
 
 
