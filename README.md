@@ -37,6 +37,10 @@ NOTE: This code uses many {}. This is purely done for convenience to structure t
 -----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------
 
+
+# MAJOR METHODS OVERALL. ALL INFO WILL BE UPDATED WITHIN THIS WEEK AFTER 05.03.2026
+
+
 ### MT_01_Data_Harmonization_Code
 
 This code is harmonizes the PPGIS data from Helsinki and Copenhagen. The original social values (13 for Helsinki, 17 for Copenhagen) are reclassified into **8 new** (oftentimes broader) social value categories. Categories that could not sensibly be reclassified were omitted from the 8 new social value categories.
