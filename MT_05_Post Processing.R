@@ -30,7 +30,7 @@ library(sf) # to work with sf files
 # ============================================
 
 # Vector of dataset suffixes
-cities <- c("CPH") #, "HEL")
+cities <- c("CPH", "HEL")
 resolution <- c("100", "175", "250", "375", "500")
 content <- c("LC", "CCSV") # used to load all datasets
 
@@ -47,7 +47,7 @@ for (x in resolution) {
         # data handling
         if (file == "CCSV") {           
           final <- current |> 
-            # remove all columns that are not needed  s
+            # remove all columns that are not needed
             select(-c(left, top, right, bottom, row_index, col_index)) |> 
             arrange(id)
         } else {
@@ -89,7 +89,7 @@ for (x in resolution) {
     # assign file
     assign(
       paste0("HEL_", x, "m", "_", file),
-      current)
+      final)
   }
 }
 
