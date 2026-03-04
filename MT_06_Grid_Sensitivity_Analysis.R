@@ -314,7 +314,7 @@ for (city in cities) {
   # choose all GAMs to be compared
   all_names <- ls()
   filtered <- all_names[grep("GAM_1_total", all_names)] # adjust GAM here!
-  filtered <- filtered[grep("HEL", filtered)] # adjust city here!
+  filtered <- filtered[grep("CPH", filtered)] # adjust city here!
   gam_list <- mget(filtered)
   
   # extract smooths
@@ -332,13 +332,17 @@ for (city in cities) {
     geom_ribbon(aes(ymin = .estimate - .se, ymax = .estimate + .se, fill = resolution),
                 alpha = 0.1, colour = NA) +
     labs(colour = "Resolution (m)", fill = "Resolution (m)", linetype = "Resolution (m)",
-         x = "Canopy Cover (mean)", y = "Partial Effect (log scale)") +
+         x = "Canopy Cover [%]", y = "Partial Effect (log scale)",
+         title = "Copenhagen",
+         subtitle = "Grid Sensitivity for: total SV count ~ mean Canopy Cover") +
     theme_minimal()
   
 }
 
 # summaries
-summary(HEL_100m_GAM_1_total)
+summary(CPH_100m_GAM_1_total)
+
+rm(list = ls()[grep("_total", ls())]) # this has to be adjusted!
 
 # ============================================
 # 6) GAM Analysis - Individual SV Count
@@ -418,16 +422,17 @@ for (city in cities) {
 {
   # Social Value colors
   sv_cols <- c(
-    "#d45680",  # 1: Relaxation         
-    "#4d9955",  # 2: Natural Values      
-    "#c166e0",  # 3: Aesthetics          
-    "#009acb",  # 4: Physical Well-Being 
-    "#e8621a",  # 5: Social Interaction  
-    "#e69c24",  # 6: Heritage            
-    "#e8431a",  # 7: Spiritual Values    
-    "#1a3a5c"   # 8: Personal Identity   
+    "#900c3f",  # 1: Relaxation         
+    "#0b5227",  # 2: Natural Values      
+    "#182b55",  # 3: Aesthetics          
+    "#f7c435",  # 4: Physical Well-Being  
+    "#d94f21",  # 5: Social Interaction  
+    "#9aab4b",  # 6: Heritage            
+    "#5f4e94",  # 7: Spiritual Values    
+    "#f0b6ad"   # 8: Personal Identity   
   )
   
+
   # Social values
   sv_labels <- c(
     "1" = "1: Relaxation",
@@ -444,7 +449,7 @@ for (city in cities) {
 # plot - adjust data entry in this section!
 {
   # choose all GAMs to be compared
-  gam_list <- mget(ls()[grep("HEL_250_GAM_1", ls())]) # this has to be adjusted!
+  gam_list <- mget(ls()[grep("HEL_250m_GAM_1", ls())]) # this has to be adjusted!
   
   # prepare plot
   smooth_df <- do.call(rbind, lapply(names(gam_list), function(name) {
@@ -458,20 +463,24 @@ for (city in cities) {
   
   ggplot(smooth_df, aes(x = CC_mean, y = .estimate, colour = sv_num, linetype = sv_num)) +
     geom_line() +
-    geom_ribbon(aes(ymin = .estimate - .se, ymax = .estimate + .se, fill = sv_num), 
-                alpha = 0.1, colour = NA) +
+    #geom_ribbon(aes(ymin = .estimate - .se, ymax = .estimate + .se, fill = sv_num), 
+     #           alpha = 0.05, colour = NA) +
     # scale_y_continuous(trans = "exp") +     # this transforms the estimate link-scale (= log scale) into a response scale (exp(log scale))
     scale_colour_manual(values = sv_cols, labels = sv_labels) +
     scale_fill_manual(values = sv_cols, labels = sv_labels) +
-    scale_linetype_manual(values = c("1" = "solid", "2" = "dashed", "3" = "dotted",
-                                     "4" = "dotdash", "5" = "longdash", "6" = "twodash",
-                                     "7" = "solid", "8" = "dashed"),
+    scale_linetype_manual(values = c("1" = "solid", "2" = "solid", "3" = "solid",
+                                     "4" = "solid", "5" = "dashed", "6" = "dashed",
+                                     "7" = "dashed", "8" = "dashed"),
                           labels = sv_labels) +
-    labs(colour = "Social Value", fill = "Social Value", linetype = "Social Value") +
+    labs(colour = "Social Value", fill = "Social Value", linetype = "Social Value",
+         x = "Canopy Cover [%]", y = "Partial Effect (log scale)",
+         title = "Helsinki",
+         subtitle = "GAM: total SV count ~ mean Canopy Cover; Resolution: 250m") +
     theme_minimal()
   
 }
 
+summary(CPH_250m_GAM_1_1)
 
 
 
