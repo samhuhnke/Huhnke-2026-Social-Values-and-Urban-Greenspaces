@@ -7,7 +7,6 @@
 #
 # This code is intended to post-process the grid based data to prepare it for analysis
 # 
-#
 # ============================================
 # 0) Set working directory + clear environment (if needed)
 # ============================================
@@ -33,7 +32,6 @@ library(sf) # to work with sf files
 cities <- c("CPH", "HEL")
 resolution <- c("100", "175", "250", "375", "500")
 content <- c("LC", "CCSV") # used to load all datasets
-
 
 # TURN THIS INTO A LOOP to load all the dfs for CPH and HEL
 
@@ -94,7 +92,7 @@ for (x in resolution) {
 }
 
 # ============================================
-# 3) Pivoting LC into wide format
+# 3) Post processing + saving datasets as .csv and .gpkg
 # ============================================
 
 for (city in cities) {
@@ -131,6 +129,13 @@ for (x in resolution) {
     ifelse(Final$Forest >= Final$Greenspace & Final$Forest >= Final$Other, "Forest",
            ifelse(Final$Greenspace >= Final$Other, "Greenspace", "Other"))
   )
+  
+  Final <- Final %>%
+    mutate(
+      Forest_quintile    = ntile(Forest,    5),
+      Greenspace_quintile = ntile(Greenspace, 5),
+      Other_quintile     = ntile(Other,      5)
+    )
   
   # create final dataset
   assign(

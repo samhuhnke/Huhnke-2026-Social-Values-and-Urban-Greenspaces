@@ -1,10 +1,10 @@
 # ============================================ 
-# MT_05_Buffer_Sensitivity_Analysis (+ at different grid sizes)
+# MT_06_Grid_Sensitivity_Analysis
 # ============================================
 #
 # AUTHOR: Sam Huhnke, M.Sc. University of Helsinki
 #
-# This code contains all GLMs and GAMs used to analyze the data. 
+# This code contains the sensitivity analysis
 # It further creates tables to check the general data structure and to assess dispersion
 #
 # ============================================
@@ -54,26 +54,28 @@ for (city in cities) {
 # ============================================
 
 # create empty table before loops
-analysis_table <- data.frame(city = character(), resolution = character(),
-                             cells = numeric(),
-                             area_km2 = numeric(), 
-                             area_rel = numeric(),
-                             total_sv = numeric(),
-                             sv_deficit = numeric(),
-                             sv_def_rel = numeric(),
-                             sv_density = numeric(),
-                             canopy_mean = numeric(),
-                             canopy_median = numeric(),
-                             Other_avg = numeric(),
-                             GS_avg = numeric(),
-                             Forest_avg = numeric(),
-                             Other_dom_n = numeric(),
-                             GS_dom_n = numeric(),
-                             Forest_dom_n = numeric(),
-                             CC_mean_b50 = numeric(),
-                             CC_median_b50 = numeric()
-                             )
-
+{
+  analysis_table <- data.frame(city = character(), resolution = character(),
+                               cells = numeric(),
+                               area_km2 = numeric(), 
+                               area_rel = numeric(),
+                               total_sv = numeric(),
+                               sv_deficit = numeric(),
+                               sv_def_rel = numeric(),
+                               sv_density = numeric(),
+                               canopy_mean = numeric(),
+                               canopy_median = numeric(),
+                               Other_avg = numeric(),
+                               GS_avg = numeric(),
+                               Forest_avg = numeric(),
+                               Other_top_q = numeric(),
+                               GS_top_q = numeric(),
+                               Forest_top_q = numeric(),
+                               CC_mean_b50 = numeric(),
+                               CC_median_b50 = numeric(),
+                               n_sv1 = numeric(),n_sv2 = numeric(),n_sv3 = numeric(),n_sv4 = numeric(),n_sv5 = numeric(),n_sv6 = numeric(),n_sv7 = numeric(),n_sv8 = numeric()
+  )
+}
 
 # Data Structure Analysis Loop
 for (city in cities) {
@@ -126,13 +128,23 @@ for (city in cities) {
     Forest_avg <- mean(current$Forest)
     
     # number of cells with other dominance
-    Other_dom <- nrow(current |> filter(Dominant_LC == "Other"))
+    Other_q <- nrow(current |> filter(Other_quintile == 5))
     
     # number of cells with Greenspace dominance
-    GS_dom <- nrow(current |> filter(Dominant_LC == "Greenspace"))
+    GS_q <- nrow(current |> filter(Greenspace_quintile == 5))
     
     # number of cellls with Forest dominance 
-    Forest_dom <- nrow(current |> filter(Dominant_LC == "Forest"))
+    Forest_q <- nrow(current |> filter(Forest_quintile == 5))
+    
+    # individual social value count across all cells
+    sv1 <- current |> select(n_sv1) |> sum()
+    sv2 <- current |> select(n_sv2) |> sum()
+    sv3 <- current |> select(n_sv3) |> sum()
+    sv4 <- current |> select(n_sv4) |> sum()
+    sv5 <- current |> select(n_sv5) |> sum()
+    sv6 <- current |> select(n_sv6) |> sum()
+    sv7 <- current |> select(n_sv7) |> sum()
+    sv8 <- current |> select(n_sv8) |> sum()
     
     
     # save outputs
@@ -154,15 +166,15 @@ for (city in cities) {
                              Other_avg = Other_avg,
                              GS_avg = GS_avg,
                              Forest_avg = Forest_avg,
-                             Other_dom_n = Other_dom,
-                             GS_dom_n = GS_dom,
-                             Forest_dom_n = Forest_dom
+                             Other_top_q = Other_q,
+                             GS_top_q = GS_q,
+                             Forest_top_q = Forest_q,
+                             n_sv1 = sv1, n_sv2 = sv2, n_sv3 = sv3, n_sv4 = sv4, n_sv5 = sv5, n_sv6 = sv6, n_sv7 = sv7, n_sv8 = sv8
                              )
                            )
    
   }
 }
-
 
 # ============================================
 # 4) GLM Analysis and Dispersion Check
@@ -305,11 +317,10 @@ for (city in cities) {
       gam_4
     )
     
-    
   }
 }
 
-# plot - adjust city and GAM in this section!
+# plot - comparison - adjust city and GAM in this section!
 {
   # choose all GAMs to be compared
   all_names <- ls()
@@ -339,13 +350,19 @@ for (city in cities) {
   
 }
 
+# plot - single - adjust city and GAM in this section!
+plot(CPH_250m_GAM_1_total)
+plot(HEL_250m_GAM_1_total)
+
 # summaries
 summary(CPH_100m_GAM_1_total)
 
 rm(list = ls()[grep("_total", ls())]) # this has to be adjusted!
 
+
+
 # ============================================
-# 6) GAM Analysis - Individual SV Count
+# 6) GAM Analysis - Individual SV Count - NOW ONLY 250m resolution!!!
 # ============================================
 
 # libraries needed - GAM
@@ -364,10 +381,9 @@ rm(list = ls()[grep("_total", ls())]) # this has to be adjusted!
 
 # GAM 1: n_svX ~ s(CC_mean)
 for (city in cities) {
-  for (x in resolution) {
     
     # current file + resolution
-    current <- get(paste0(city, "_", x, "m"))
+    current <- get(paste0(city, "_", "250", "m"))
     
     for (y in SVs)  {
       
@@ -382,40 +398,11 @@ for (city in cities) {
       
       # save GAM
       assign(
-        paste0(city, "_", x, "m", "_", "GAM_1", "_", y),
+        paste0(city, "_", "250", "m", "_", "GAM_1", "_", y),
         gam_1
       )
       
     }
-  }
-}
-
-# GAM 2: n_svX ~ s(CC_mean) + Forest + Greenspace + Other
-for (city in cities) {
-  for (x in resolution) {
-    
-    # current file + resolution
-    current <- get(paste0(city, "_", x, "m"))
-    
-    for (y in SVs)  {
-      
-      # name of columns: n_svX with X being a number between 1 and 8
-      sv <- paste0("n_sv", y)
-      
-      # Build formulas as strings, then convert with as.formula()
-      f2 <- as.formula(paste(sv, "~ s(CC_mean) + Forest + Greenspace + Other"))
-      
-      # GAM 1: Canopy Cover 
-      gam_2 <- gam(f2, family = nb(), data = current)
-      
-      # save GAM
-      assign(
-        paste0(city, "_", x, "m", "_", "GAM_2", "_", y),
-        gam_2
-      )
-      
-    }
-  }
 }
 
 # colors and labels
@@ -482,7 +469,22 @@ for (city in cities) {
 
 summary(CPH_250m_GAM_1_1)
 
-
-
 # remove function after all plots are done
 rm(list = ls()[grep("GAM", ls())]) # this has to be adjusted!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
