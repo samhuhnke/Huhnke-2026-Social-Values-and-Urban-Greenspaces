@@ -21,8 +21,16 @@ setwd("C:/Users/samhu/Desktop/Code Projects/Huhnke_2026/data/")
 # 1) Load necessary packages
 # ============================================
 
+# libraries needed for data handling
 library(tidyverse)
-library(sf) # to work with sf files
+
+# libraries needed - GAM
+library(mgcv) # used for GLMs and GAMs
+
+# libraries needed - Plot
+library(ggplot2)
+library(gratia)  # gratia::smooth_estimates() extracts GAM smooths as dataframes
+library(patchwork) # to produce combined plot
 
 # ============================================
 # 2) Load data
@@ -47,6 +55,7 @@ land_use <- c("Forest", "Greenspace", "Other")
     "#5f4e94",  # 7: Spiritual Values    
     "#f0b6ad"   # 8: Personal Identity   
   )
+  names(sv_cols) <- c("1", "2", "3", "4", "5", "6", "7", "8")
   
   
   # Social values
@@ -209,22 +218,8 @@ for (city in cities) {
 }
 
 # ============================================
-# 5) GAM Analysis - Total SV Count
+# 5) GAM 1 - Total SV Count
 # ============================================
-
-# libraries needed - GAM
-{
-  library(mgcv) # used for GLMs and GAMs
-  library(patchwork)
-  library(ggplot2)
-  library(gratia) # used to plot GAM with ggplot - can use & from patchwork instead of +
-}
-
-# libraries needed - Plot
-{
-  library(ggplot2)
-  library(gratia)  # gratia::smooth_estimates() extracts GAM smooths as dataframes
-}
 
 # GAM 1: n_total ~ s(CC_mean)
 for (city in cities) {
@@ -238,7 +233,7 @@ for (city in cities) {
     
     # save GAM
     assign(
-      paste0(city, "_", x, "m", "_", "GAM_1", "_", "total"),
+      paste0(city, "_", x, "m", "_", "GAM_1"),
       gam_1
     )
     
@@ -249,8 +244,8 @@ for (city in cities) {
 # GAM 1: plot
 {
   # Extract smooth estimates for both cities and bind together
-  sm_CPH <- smooth_estimates(CPH_250m_GAM_1_total) %>% mutate(City = "Copenhagen")
-  sm_HEL <- smooth_estimates(HEL_250m_GAM_1_total) %>% mutate(City = "Helsinki")
+  sm_CPH <- smooth_estimates(CPH_250m_GAM_1) %>% mutate(City = "Copenhagen")
+  sm_HEL <- smooth_estimates(HEL_250m_GAM_1) %>% mutate(City = "Helsinki")
   
   # bind together
   bind_rows(sm_CPH, sm_HEL) %>%
@@ -258,85 +253,31 @@ for (city in cities) {
     geom_ribbon(aes(ymin = .estimate - 1.96 * .se, ymax = .estimate + 1.96 * .se), alpha = 0.15, colour = NA) +
     geom_line(linewidth = 0.9) +
     labs(
-      title  = "GAM 1 — Partial effect of Canopy Cover by City",
-      x      = "Mean Canopy Cover [%]",
+      x      = "Canopy Cover [%]",
       y      = "Partial effect (log scale)",
       colour = "City",
       fill   = "City"
     ) +
-    theme_bw(base_size = 12)
-}
-
-# GAM 2: n_total ~ s(CC_mean, by = factor(Dominant_LC)) + factor(Dominant_LC)
-for (city in cities) {
-  for (x in resolution) {
-    
-    # current file + resolution
-    current <- get(paste0(city, "_", x, "m"))
-    
-    # GAM 2: Canopy Cover by dominant land use
-    gam_2 <- gam(n_total ~ s(CC_mean, by = factor(Dominant_LC)) + factor(Dominant_LC), family = nb(), data = current)
-    
-    # save GAM
-    assign(
-      paste0(city, "_", x, "m", "_", "GAM_2", "_", "total"),
-      gam_2
+    theme_bw(base_size = 12) +
+    theme(
+      legend.position = c(0.2, 0.75),
+      legend.justification = c(1, 0)
     )
-    
-  }
+  
+  ggsave("GAM1_combined.png", width = 210, height = 120, units = "mm", dpi = 300)
 }
 
-# GAM 2: plot
-{
-  plot_gam2_partial <- function(model, city_label) {
-    
-    sm <- smooth_estimates(model)
-    
-    sm %>%
-      filter(grepl("CC_mean", .smooth)) %>%  # gratia uses .smooth, not smooth
-      mutate(Dominant_LC = gsub(".*factor\\(Dominant_LC\\)(.+)", "\\1", .smooth)) %>%
-      ggplot(aes(x = CC_mean, y = .estimate, colour = Dominant_LC, fill = Dominant_LC)) +
-      geom_ribbon(aes(ymin = .estimate - 1.96 * .se, ymax = .estimate + 1.96 * .se), alpha = 0.15, colour = NA) +
-      geom_line(linewidth = 0.9) +
-      labs(
-        title  = paste("GAM 2 — Partial effect of Canopy Cover |", city_label),
-        x      = "Mean Canopy Cover (CC_mean)",
-        y      = "Partial effect (log scale)",
-        colour = "Dominant LC",
-        fill   = "Dominant LC"
-      ) +
-      theme_bw(base_size = 12)
-  }
-  
-  p_CPH <- plot_gam2_partial(CPH_250m_GAM_2_total, "Copenhagen (250 m)")
-  p_HEL <- plot_gam2_partial(HEL_250m_GAM_2_total, "Helsinki (250 m)")
-  
-  print(p_CPH)
-  print(p_HEL)
-}
+# GAM 1: summary
+summary(CPH_250m_GAM_1_total)
 
-# remove GAMs
-rm(list = ls()[grep("_total|^sm|^gam", ls())])
+# remove GAMs and temprorary dfs
+rm(list = ls()[grep("_GAM_1|^sm|^gam", ls())])
 
 # ============================================
-# 6) GAM Analysis - Individual SV Count - NOW ONLY 250m resolution!!!
+# 6) GAM 2 - Individual SV Count 
 # ============================================
 
-# libraries needed - GAM
-{
-  library(mgcv) # used for GLMs and GAMs
-  library(patchwork)
-  library(ggplot2)
-  library(gratia) # used to plot GAM with ggplot - can use & from patchwork instead of +
-}
-
-# libraries needed - Plot
-{
-  library(ggplot2)
-  library(gratia)  # gratia::smooth_estimates() extracts GAM smooths as dataframes
-}
-
-# GAM 1: n_svX ~ s(CC_mean)
+# GAM 2: n_svX ~ s(CC_mean)
 for (city in cities) {
   
   # current file + resolution
@@ -351,21 +292,21 @@ for (city in cities) {
     f1 <- as.formula(paste(sv, "~ s(CC_mean)"))
     
     # GAM 1: Canopy Cover 
-    gam_1 <- gam(f1, family = nb(), data = current)
+    gam_2 <- gam(f1, family = nb(), data = current)
     
     # save GAM
     assign(
-      paste0(city, "_", "250", "m", "_", "GAM_1", "_", y),
-      gam_1
+      paste0(city, "_", "250", "m", "_", "GAM_2", "_", y),
+      gam_2
     )
     
   }
 }
 
-# plot - adjust data entry in this section!
+# GAM 2: plot - adjust data entry in this section!
 {
   # choose all GAMs to be compared
-  gam_list <- mget(ls()[grep("HEL_250m_GAM_1", ls())]) # this has to be adjusted!
+  gam_list <- mget(ls()[grep("CPH_250m_GAM_2", ls())]) # this has to be adjusted!
   
   # prepare plot
   smooth_df <- do.call(rbind, lapply(names(gam_list), function(name) {
@@ -375,9 +316,9 @@ for (city in cities) {
   }))
   
   # extract SV number from model name (the last character)
-  smooth_df$sv_num <- sub(".*GAM_1_", "", smooth_df$model)
+  smooth_df$sv_num <- sub(".*GAM_2_", "", smooth_df$model)
   
-  ggplot(smooth_df, aes(x = CC_mean, y = .estimate, colour = sv_num, linetype = sv_num)) +
+  p2 <- ggplot(smooth_df, aes(x = CC_mean, y = .estimate, colour = sv_num, linetype = sv_num)) +
     geom_line() +
     #geom_ribbon(aes(ymin = .estimate - .se, ymax = .estimate + .se, fill = sv_num), 
      #          alpha = 0.05, colour = NA) +
@@ -389,73 +330,29 @@ for (city in cities) {
                                      "7" = "dashed", "8" = "dashed"),
                           labels = sv_labels) +
     labs(colour = "Social Value", fill = "Social Value", linetype = "Social Value",
-         x = "Canopy Cover [%]", y = "Partial Effect (log scale)",
-         title = "Helsinki",
-         subtitle = "GAM: total SV count ~ mean Canopy Cover; Resolution: 250m") +
-    theme_minimal()
+         x = "Canopy Cover [%]", y = "Partial Effect (log scale)") +
+    theme_minimal() #+
+    theme(legend.position = "bottom")
+  
+  p1 + p2 + 
+    plot_layout(guides = "collect") & 
+    theme(legend.position = "bottom",
+          legend.title = element_blank()
+          )
+  
+  ggsave("GAM2_combined.png", width = 210, height = 120, units = "mm", dpi = 300)
   
 }
 
-# GAM 2: n_svX ~ s(CC_mean, by = Dominant_LC) + Dominant_LC
-for (city in cities) {
-  
-  # current file + resolution
-  current <- get(paste0(city, "_", "250", "m"))
-  
-  for (y in SVs)  {
-    
-    # name of columns: n_svX with X being a number between 1 and 8
-    sv <- paste0("n_sv", y)
-    
-    # Build formulas as strings, then convert with as.formula()
-    f2 <- as.formula(paste(sv, "~ s(CC_mean, by = factor(Dominant_LC)) + factor(Dominant_LC)"))
-    
-    # GAM 1: Canopy Cover 
-    gam_2 <- gam(f2, family = nb(), data = current)
-    
-    # save GAM
-    assign(
-      paste0(city, "_", "250", "m", "_", "GAM_2", "_", y),
-      gam_2
-    )
-    
-  }
-}
+# GAM 2: summary
+summary(HEL_250m_GAM_1_1)
 
-# plot - adjust data entry in this section!
-{
-  gam_list <- mget(ls()[grep("HEL_250m_GAM_2", ls())])
-  
-  smooth_df <- do.call(rbind, lapply(names(gam_list), function(name) {
-    df <- smooth_estimates(gam_list[[name]])
-    df$model <- name
-    return(df)
-  }))
-  
-  smooth_df$sv_num <- sub(".*GAM_2_", "", smooth_df$model)
-  
-  # extract LC class from .smooth column
-  smooth_df$LC <- gsub(".*factor\\(Dominant_LC\\)(.+)", "\\1", smooth_df$.smooth)
-  
-  ggplot(smooth_df, aes(x = CC_mean, y = .estimate, colour = sv_num, linetype = sv_num)) +
-    geom_line() +
-    facet_wrap(~ LC) +
-    scale_colour_manual(values = sv_cols, labels = sv_labels) +
-    scale_linetype_manual(values = c("1" = "solid", "2" = "solid", "3" = "solid",
-                                     "4" = "solid", "5" = "dashed", "6" = "dashed",
-                                     "7" = "dashed", "8" = "dashed"),
-                          labels = sv_labels) +
-    labs(colour = "Social Value", linetype = "Social Value",
-         x = "Canopy Cover [%]", y = "Partial Effect (log scale)",
-         title = "Helsinki",
-         subtitle = "GAM 2: SV count ~ CC by Dom_LC + Dom_LC; 250m") +
-    theme_minimal()
-}
-
+# remove GAMs and temporary dfs
+rm(list = ls()[grep("_GAM_2|^smooth|^gam", ls())])
 
 
 # ============================================
-# 7) GAM Analysis - Quintile based approach - don't know if this is methodologically sound!
+# 7) GAM 3 - Quintile based approach - don't know if this is methodologically sound!
 # ============================================
 
 # subset data based on quintiles
@@ -482,7 +379,7 @@ for (city in cities) {
   
 }
 
-# GAM 1: n_total ~ s(CC_mean)
+# GAM 3: n_total ~ s(CC_mean)
 for (city in cities) {
   for (use in land_use) {
     
@@ -490,74 +387,298 @@ for (city in cities) {
     current <- get(paste0(city, "_", "250", "m", "_", use))
     
     # GAM 1: Canopy Cover 
-    gam_1 <- gam(n_total ~ s(CC_mean), family = nb(), data = current)
+    gam_3 <- gam(n_total ~ s(CC_mean), family = nb(), data = current)
     
     # save GAM
     assign(
-      paste0(city, "_", "250", "m", "_", "GAM_1", "_", use),
-      gam_1
+      paste0(city, "_", "250", "m", "_", "GAM_3", "_", use),
+      gam_3
     )
     
   }
 }
 
-# GAM 1: plots
+# GAM 3: plots
+{
+  cities <- c("CPH") # this one needs to be adapted to it only takes one city at a time to produce the plot
+  
+  for (city in cities) {
+    
+    plot_data <- list()
+    
+    for (use in land_use) {
+      
+      # get current GAM
+      current_gam <- get(paste0(city, "_250m_GAM_3_", use))
+      
+      # extract partial effect of s(CC_mean)
+      plot_obj <- plot(current_gam, select = 1, se = TRUE)
+      
+      partial_df <- data.frame(
+        CC_mean  = plot_obj[[1]]$x,
+        fit      = plot_obj[[1]]$fit,
+        se       = plot_obj[[1]]$se,
+        LandUse  = use
+      )
+      
+      partial_df$lower <- partial_df$fit - 1.96 * partial_df$se
+      partial_df$upper <- partial_df$fit + 1.96 * partial_df$se
+      
+      plot_data[[use]] <- partial_df
+    }
+    
+    plot_df <- do.call(rbind, plot_data)
+    
+    p <- ggplot(plot_df, aes(x = CC_mean, y = fit, color = LandUse, fill = LandUse)) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+      geom_line(linewidth = 1) +
+      #geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.15, color = NA) +
+      scale_color_manual(values = c("Forest"     = "#1b7837",
+                                    "Greenspace" = "#762a83",
+                                    "Other"      = "#e08214")) +
+      scale_fill_manual(values  = c("Forest"     = "#1b7837",
+                                    "Greenspace" = "#762a83",
+                                    "Other"      = "#e08214")) +
+      labs(
+        x     = "Canopy Cover (%)",
+        y     = "Partial Effect (Log Scale)",
+        color = "Land Use",
+        fill  = "Land Use"
+      ) +
+      theme_bw() +
+      theme(
+        plot.title      = element_text(face = "bold", size = 13),
+        legend.position = "bottom"
+      )
+    
+    assign(paste0(city, "_GAM_1_plot"), p)
+    print(p)
+  }
+  
+  p1 + p2 + 
+    plot_layout(guides = "collect") & 
+    theme(legend.position = "bottom",
+          legend.title = element_blank()
+    )
+  
+  ggsave("GAM3_v1_combined.png", width = 210, height = 120, units = "mm", dpi = 300)
+  
+}
+
+# GAM 3: summary
+summary(CPH_250m_GAM_3_Other)
+
+# remove GAMs and temporary dfs
+rm(list = ls()[grep("_GAM_3|^current|^plot|^Final|^partial|^gam", ls())])
+
+
+# ============================================
+# 8) GAM 4 - Land-cover based interaction:
+# - how does the SV ~ CC relationship change with an increase of Forest/Greenspace compared to Other -
+# ============================================
+
+# GAM 4: n_total ~ s(CC_mean) + ti(CC_mean, Forest) + ti(CC_mean, Greenspace)
 for (city in cities) {
-  
-  plot_data <- list()
-  
-  for (use in land_use) {
+  for (x in resolution) {
     
-    # get current GAM
-    current_gam <- get(paste0(city, "_250m_GAM_1_", use))
+    # current file 
+    current <- get(paste0(city, "_", x, "m"))
     
-    # extract partial effect of s(CC_mean)
-    plot_obj <- plot(current_gam, select = 1, se = TRUE)
+    # GAM 4: Canopy Cover + interaction terms 
+    gam_4 <- gam(n_total ~ s(CC_mean) + ti(CC_mean, Forest) + ti(CC_mean, Greenspace), family = nb(), method = "REML", data = current)
     
-    partial_df <- data.frame(
-      CC_mean  = plot_obj[[1]]$x,
-      fit      = plot_obj[[1]]$fit,
-      se       = plot_obj[[1]]$se,
-      LandUse  = use
+    # save GAM
+    assign(
+      paste0(city, "_", "250", "m", "_", "GAM_4"),
+      gam_4
     )
     
-    partial_df$lower <- partial_df$fit - 1.96 * partial_df$se
-    partial_df$upper <- partial_df$fit + 1.96 * partial_df$se
-    
-    plot_data[[use]] <- partial_df
   }
-  
-  plot_df <- do.call(rbind, plot_data)
-  
-  p <- ggplot(plot_df, aes(x = CC_mean, y = fit, color = LandUse, fill = LandUse)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    geom_line(linewidth = 1) +
-    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.15, color = NA) +
-    scale_color_manual(values = c("Forest"     = "#1b7837",
-                                  "Greenspace" = "#762a83",
-                                  "Other"      = "#e08214")) +
-    scale_fill_manual(values  = c("Forest"     = "#1b7837",
-                                  "Greenspace" = "#762a83",
-                                  "Other"      = "#e08214")) +
-    labs(
-      title = paste(city, "– Partial Effect of s(CC_mean) by Land Use (Top Quintile)"),
-      x     = "Mean Canopy Cover (%)",
-      y     = "Partial Effect",
-      color = "Land Use",
-      fill  = "Land Use"
-    ) +
-    theme_bw() +
-    theme(
-      plot.title      = element_text(face = "bold", size = 13),
-      legend.position = "bottom"
-    )
-  
-  assign(paste0(city, "_GAM_1_plot"), p)
-  print(p)
 }
 
-print(HEL_GAM_1_plot)
+# GAM 4: Plot
+{
+  vis.gam(HEL_250m_GAM_4, # change to HEL_ or CPH_
+          view = c("CC_mean", "Greenspace"), # change to "Forest" or "Greenspace"
+          plot.type = "contour") # change to "contour" for 2D or "persp" for 3D
+  
+}
 
-summary(CPH_250m_Greenspace$CC_mean)
-nrow(subset)
+# GAM 4: summary
+summary(HEL_250m_GAM_4)
+
+# remove GAMs and temporary dfs
+rm(list = ls()[grep("^current|^plot|^gam", ls())])
+
+
+
+# ============================================
+# 9) GAM 5 - Land-cover based interaction:
+# - how does the SV ~ CC relationship change with an increase of Forest/Greenspace compared to Other -
+# ============================================
+
+# GAM 5: n_total ~ ti(CC_mean) + ti(Forest) + ti(Greenspace) + ti(CC_mean, Forest) + ti(CC_mean, Greenspace)
+for (city in cities) {
+  for (x in resolution) {
+    
+    # current file 
+    current <- get(paste0(city, "_", x, "m"))
+    
+    # GAM 4: Canopy Cover + interaction terms 
+    gam_5 <- gam(n_total ~ ti(CC_mean) + ti(Forest) + ti(Greenspace) + 
+                   ti(CC_mean, Forest) + ti(CC_mean, Greenspace),
+                 family = nb(), method = "REML", data = current)
+    
+    # save GAM
+    assign(
+      paste0(city, "_", "250", "m", "_", "GAM_5"),
+      gam_5
+    )
+    
+  }
+}
+
+# GAM 5: Plot
+{
+  vis.gam(HEL_250m_GAM_5, # change to HEL_ or CPH_
+          view = c("CC_mean", "Greenspace"), # change to "Forest" or "Greenspace"
+          plot.type = "contour") # change to "contour" for 2D or "persp" for 3D
+  
+}
+
+# GAM 5: summary
+summary(HEL_250m_GAM_5)
+
+# ============================================
+# 10) Supporting Plots
+# ============================================
+
+# libraries
+library(ggplot2)
+library(patchwork)
+
+# Histograms of canopy cover
+{
+  p1 <- HEL_250m |> 
+    ggplot() +
+    geom_histogram(aes(x = CC_mean), binwidth = 5, fill = "#6B7C5C", boundary = 0) +
+    scale_x_continuous(breaks = seq(0, 100, by = 10), limits = c(0, 100)) +
+    scale_y_continuous(breaks = seq(0, 1300, by = 100), limits = c(0, 1300)) +
+    labs(x = "Mean Canopy Cover per cell [%]",
+         y = "Number of cells") +
+    annotate("label", x = Inf, y = Inf, label = "Total grid cells = 4,054",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic()
+  
+  p2 <- CPH_250m |> 
+    ggplot() +
+    geom_histogram(aes(x = CC_mean), binwidth = 5, fill = "#6B7C5C", boundary = 0) +
+    scale_x_continuous(breaks = seq(0, 100, by = 10), limits = c(0, 100)) +
+    scale_y_continuous(breaks = seq(0, 1300, by = 100), limits = c(0, 1300)) +
+    labs(x = "Mean Canopy Cover per cell [%]",
+         y = "Number of cells") +
+    annotate("label", x = Inf, y = Inf, label = "Total grid cells = 1,753",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic()
+  
+  p1 + p2
+  
+  ggsave("Canoyp_Covers.png", width = 210, height = 120, units = "mm", dpi = 300)
+}
+
+# Histograms of total social values
+{
+  p1 <- HEL_250m |> 
+    ggplot() +
+    geom_histogram(aes(x = n_total), binwidth = 5, fill = "black", boundary = 0) +
+    scale_x_continuous(breaks = seq(0, 220, by = 40), limits = c(0, 220)) +
+    scale_y_continuous(breaks = seq(0, 3500, by = 500), limits = c(0, 3500)) +
+    labs(x = "Social Values per cell [n]",
+         y = "Number of cells") +
+    annotate("label", x = Inf, y = Inf, label = "Total grid cells = 4,054",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic()
+  
+  p2 <- CPH_250m |> 
+    ggplot() +
+    geom_histogram(aes(x = n_total), binwidth = 5, fill = "black", boundary = 0) +
+    scale_x_continuous(breaks = seq(0, 220, by = 40), limits = c(0, 220)) +
+    scale_y_continuous(breaks = seq(0, 1600, by = 200), limits = c(0, 1600)) +
+    labs(x = "Social Values per cell [n]",
+         y = "Number of cells") +
+    annotate("label", x = Inf, y = Inf, label = "Total grid cells = 1,753",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic()
+  
+  p1 + p2
+  
+  ggsave("Social_value_distribution.png", width = 210, height = 120, units = "mm", dpi = 300)
+}
+
+# Histograms of total social values - zoomed
+{
+  p1 <- HEL_250m |> 
+    ggplot() +
+    geom_histogram(aes(x = n_total), binwidth = 5, fill = "black", boundary = 0) +
+    scale_x_continuous(breaks = seq(0, 200, by = 20), limits = c(0, 200)) +
+    scale_y_continuous(breaks = seq(0, 3500, by = 500), limits = c(0, 3500)) +
+    labs(x = "Social Values per cell [n]",
+         y = "Number of cells") +
+    annotate("label", x = Inf, y = Inf, label = "Total grid cells = 4,054",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic()
+  
+  p2 <- CPH_250m |> 
+    ggplot() +
+    geom_histogram(aes(x = n_total), binwidth = 5, fill = "black", boundary = 0) +
+    scale_x_continuous(breaks = seq(0, 200, by = 20), limits = c(0, 200)) +
+    scale_y_continuous(breaks = seq(0, 1600, by = 200), limits = c(0, 1600)) +
+    labs(x = "Social Values per cell [n]",
+         y = "Number of cells") +
+    annotate("label", x = Inf, y = Inf, label = "Total grid cells = 1,753",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic()
+  
+  p1 + p2
+  
+  ggsave("Social_Values_Distribution_zoomed.png", width = 210, height = 120, units = "mm", dpi = 300)
+}
+
+# Barplots of social value counts
+{
+  #ordered
+  p1 <- analysis_table |> filter(city == "HEL") |> #adjust this to either HEL or CPH
+    select(c(20:27)) |> 
+    pivot_longer(everything(), names_to = "variable", values_to = "count") |>
+    mutate(sv_num = as.character(row_number()),
+           sv_num = fct_reorder(sv_num, count, .desc = TRUE)) |>
+    ggplot() +
+    geom_col(aes(x = sv_num, y = count, fill = sv_num)) +
+    scale_fill_manual(values = sv_cols, guide = "none") +
+    scale_x_discrete(labels = sv_labels) +
+    labs(x = NULL, y = "Count") +
+    annotate("label", x = Inf, y = Inf, label = "Total social values = 16,297",
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  p2 <- analysis_table |> filter(city == "CPH") |> #adjust this to either HEL or CPH
+    select(c(20:27)) |> 
+    pivot_longer(everything(), names_to = "variable", values_to = "count") |>
+    mutate(sv_num = as.character(row_number()),
+           sv_num = fct_reorder(sv_num, count, .desc = TRUE)) |>
+    ggplot() +
+    geom_col(aes(x = sv_num, y = count, fill = sv_num)) +
+    scale_fill_manual(values = sv_cols, guide = "none") +
+    scale_x_discrete(labels = sv_labels) +
+    labs(x = NULL, y = "Count") +
+    annotate("label", x = Inf, y = Inf, label = "Total social values = 5,764", # adjust this number to HEL: 16297 and CPH: 5764  
+             hjust = 1.1, vjust = 1.5) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  p1 + p2
+  
+  ggsave("SV_Bars.png", width = 210, height = 120, units = "mm", dpi = 300)
+}
 
