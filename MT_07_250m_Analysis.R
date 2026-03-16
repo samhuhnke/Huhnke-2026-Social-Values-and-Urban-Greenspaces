@@ -454,7 +454,7 @@ for (city in cities) {
       theme(legend.position = "bottom"
       )
     
-    assign(paste0(city, "_GAM_1_plot"), p)
+    assign(paste0(city, "_GAM_3_plot"), p)
     print(p)
   }
   
@@ -639,6 +639,114 @@ summary(CPH_250m_GAM_3_Other)
   ggsave("GAM3_Supplementary.png", width = 210, height = 210, units = "mm", dpi = 300)
   
 }
+
+# GAM 3: n_svX ~ s(CC_mean)
+for (city in cities) {
+  for (use in land_use) {
+    
+    # current file + resolution
+    current <- get(paste0(city, "_", "250", "m", "_", use))
+    
+    for (y in SVs)  {
+      
+      # name of columns: n_svX with X being a number between 1 and 8
+      sv <- paste0("n_sv", y)
+      
+      # Build formulas as strings, then convert with as.formula()
+      f1 <- as.formula(paste(sv, "~ s(CC_mean)"))
+      
+      # GAM 1: Canopy Cover 
+      gam_3 <- gam(f1, family = nb(), method = "REML", data = current)
+      
+      # save GAM
+      assign(
+        paste0(city, "_", "250", "m", "_", use, "_", "GAM_3", "_", y),
+        gam_3
+      )
+      
+    }
+  }
+  
+  
+}
+
+# GAM 3: plots
+{
+  # adapt vectors to change plot output
+  cities <- c("HEL") # this one needs to be adapted to it only takes one city at a time to produce the plot
+  land_use <- c("Other") # this is changed to "Forest", "Greenspace", or "Other"
+  SVs <- c("1", "2", "3", "4", "5", "6", "7", "8")
+  
+  # plotting loop
+  for (city in cities) {
+    
+    plot_data <- list()
+    
+    for (use in land_use) {
+      for (y in SVs) {
+        
+        # get current GAM
+        current_gam <- get(paste0(city, "_250m_", use, "_", "GAM_3_", y))
+        
+        # extract partial effect of s(CC_mean)
+        plot_obj <- plot(current_gam, select = 1, se = TRUE)
+        
+        partial_df <- data.frame(
+          CC_mean  = plot_obj[[1]]$x,
+          fit      = plot_obj[[1]]$fit,
+          se       = plot_obj[[1]]$se,
+          SV       = y
+        )
+        
+        partial_df$lower <- partial_df$fit - 1.96 * partial_df$se
+        partial_df$upper <- partial_df$fit + 1.96 * partial_df$se
+        
+        plot_data[[paste0(use, "_", y)]] <- partial_df
+        
+      }
+    }
+    
+    plot_df <- do.call(rbind, plot_data)
+    
+    p <- ggplot(plot_df, aes(x = CC_mean, y = fit, color = SV, fill = SV)) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+      geom_line(linewidth = 1) +
+      #geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.15, color = NA) +
+      scale_color_manual(values = sv_cols, 
+                         labels = sv_labels) +
+      scale_fill_manual(values  = sv_cols,
+                        labels = sv_labels) +
+      labs(
+        x     = "Canopy Cover (%)",
+        y     = "Partial Effect (log scale)",
+        color = "Social Values",
+        fill  = "Social Values"
+      ) +
+      theme_bw() +
+      theme(legend.position = "bottom"
+      )
+    
+    assign(paste0(city, "_GAM_3_plot", y), p)
+    print(p)
+  }
+  
+  # assign current plot
+  p3 <- p
+  
+  # individual plots
+  p1
+  p2
+  p3
+  
+  # combined plot
+  p1 / p2 / p3 +
+    plot_layout(guides = "collect",
+                axis_titles = "collect") & 
+    theme(legend.position = "bottom",
+          legend.title = element_blank())
+}
+
+
 
 # remove GAMs and temporary dfs
 rm(list = ls()[grep("_GAM_3|^current|^plot|^Final|^partial|^gam", ls())])
