@@ -353,7 +353,7 @@ for (city in cities) {
   # choose all GAMs to be compared
   all_names <- ls()
   filtered <- all_names[grep("GAM_1_total", all_names)] # adjust GAM here!
-  filtered <- filtered[grep("HEL", filtered)] # adjust city here!
+  filtered <- filtered[grep("CPH", filtered)] # adjust city here!
   gam_list <- mget(filtered)
   
   # extract smooths
@@ -366,7 +366,7 @@ for (city in cities) {
   # extract resolution from model name
   smooth_df$resolution <- sub(".*_(\\d+)m_.*", "\\1", smooth_df$model)
   
-  p1 <- ggplot(smooth_df, aes(x = CC_mean, y = .estimate, colour = resolution, linetype = resolution)) +
+  p2 <- ggplot(smooth_df, aes(x = CC_mean, y = .estimate, colour = resolution, linetype = resolution)) +
     geom_line() +
     geom_ribbon(aes(ymin = .estimate - .se, ymax = .estimate + .se, fill = resolution),
                 alpha = 0.1, colour = NA) +
@@ -375,17 +375,18 @@ for (city in cities) {
     labs(colour = "Resolution (m)", fill = "Resolution (m)", linetype = "Resolution (m)",
          x = "Canopy Cover [%]", y = "Partial Effect (log scale)") +
     annotate("label", x = min(smooth_df$CC_mean), y = Inf,
-             label = "Helsinki",
+             label = "Copenhagen",
              hjust = 0, vjust = 1.2) +
-    theme_minimal() +
-    theme(legend.position = "none")
+    theme_bw() +
+    #theme(legend.position = "none")
     theme(
       legend.position = c(0.98, 0.02),
       legend.justification = c(1, 0)
     )
   
   # adapt assignment to change plots
-  p1 + p2
+  p1 + p2 + 
+    plot_layout(axis_titles = "collect")
   
   ggsave("Sensitivity.png", width = 210, height = 120, units = "mm", dpi = 300)
   
